@@ -1,0 +1,50 @@
+---
+// FontLoader.astro
+// Dynamically binds typography settings from site.config.ts and loads self-hosted font assets.
+import { siteConfig } from '../../site.config';
+
+// Load default fontsource weights
+// Fraunces (Headings: 600, 700)
+import '@fontsource/fraunces/600.css';
+import '@fontsource/fraunces/700.css';
+
+// Source Serif 4 (Body: 400, 600)
+import '@fontsource/source-serif-4/400.css';
+import '@fontsource/source-serif-4/600.css';
+
+// JetBrains Mono (Code: 400, 500)
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/500.css';
+
+const { fonts } = siteConfig;
+
+const headingFontStack = fonts.heading.source === 'system'
+  ? fonts.heading.fallback
+  : `'${fonts.heading.family}', ${fonts.heading.fallback}`;
+
+const bodyFontStack = fonts.body.source === 'system'
+  ? fonts.body.fallback
+  : `'${fonts.body.family}', ${fonts.body.fallback}`;
+
+const codeFontStack = fonts.code.source === 'system'
+  ? fonts.code.fallback
+  : `'${fonts.code.family}', ${fonts.code.fallback}`;
+---
+
+<style is:global define:vars={{
+  headingStack: headingFontStack,
+  bodyStack: bodyFontStack,
+  codeStack: codeFontStack,
+  baseFontSize: fonts.baseFontSize,
+  baseLineHeight: fonts.baseLineHeight,
+  contentWidth: fonts.contentWidth
+}}>
+  :root {
+    --font-heading: var(--headingStack);
+    --font-body: var(--bodyStack);
+    --font-code: var(--codeStack);
+    --font-size-base: var(--baseFontSize);
+    --line-height-base: var(--baseLineHeight);
+    --content-width: var(--contentWidth);
+  }
+</style>

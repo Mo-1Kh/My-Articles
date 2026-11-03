@@ -1,0 +1,228 @@
+---
+// Navbar.astro
+import { siteConfig, getPath } from '../../site.config';
+import ThemeToggle from './ThemeToggle.astro';
+
+const homeUrl = getPath('/');
+const rssUrl = getPath('/rss.xml');
+---
+
+<header class="site-header">
+  <div class="container header-container">
+    <div class="brand">
+      <a href={homeUrl} class="brand-link" aria-label={`${siteConfig.name} - Home`}>
+        <span class="brand-title">{siteConfig.name}</span>
+      </a>
+    </div>
+
+    <nav class="nav-actions" aria-label="Social links and preferences">
+      <ul class="social-list">
+        {siteConfig.socials.github && (
+          <li>
+            <a
+              href={siteConfig.socials.github}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="GitHub Profile"
+              title="GitHub"
+              class="icon-link"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+              </svg>
+            </a>
+          </li>
+        )}
+
+        {siteConfig.socials.x && (
+          <li>
+            <a
+              href={siteConfig.socials.x}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="X (formerly Twitter)"
+              title="X"
+              class="icon-link"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+            </a>
+          </li>
+        )}
+
+        {siteConfig.socials.linkedin && (
+          <li>
+            <a
+              href={siteConfig.socials.linkedin}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="LinkedIn Profile"
+              title="LinkedIn"
+              class="icon-link"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                <rect x="2" y="9" width="4" height="12"></rect>
+                <circle cx="4" cy="4" r="2"></circle>
+              </svg>
+            </a>
+          </li>
+        )}
+
+        {siteConfig.socials.youtube && (
+          <li>
+            <a
+              href={siteConfig.socials.youtube}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="YouTube Channel"
+              title="YouTube"
+              class="icon-link"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path>
+                <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon>
+              </svg>
+            </a>
+          </li>
+        )}
+
+        {siteConfig.socials.email && (
+          <li>
+            <a
+              href={`mailto:${siteConfig.socials.email}`}
+              aria-label="Send Email"
+              title="Email"
+              class="icon-link"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+            </a>
+          </li>
+        )}
+
+        {siteConfig.socials.rss && (
+          <li>
+            <a
+              href={rssUrl}
+              aria-label="RSS Feed"
+              title="RSS Feed"
+              class="icon-link"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 11a9 9 0 0 1 9 9"></path>
+                <path d="M4 4a16 16 0 0 1 16 16"></path>
+                <circle cx="5" cy="19" r="1"></circle>
+              </svg>
+            </a>
+          </li>
+        )}
+      </ul>
+
+      <div class="divider"></div>
+
+      <ThemeToggle />
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    border-bottom: 1px solid var(--border-muted);
+    background-color: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    backdrop-filter: blur(8px);
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 0.9rem;
+    padding-bottom: 0.9rem;
+  }
+
+  .brand-link {
+    text-decoration: none;
+    color: var(--text);
+  }
+
+  .brand-title {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    transition: color 0.15s ease;
+  }
+
+  .brand-link:hover .brand-title {
+    color: var(--accent);
+  }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .social-list {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .social-list li {
+    margin: 0;
+  }
+
+  .icon-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: 6px;
+    transition: color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .icon-link:hover {
+    color: var(--accent);
+    background-color: var(--surface);
+  }
+
+  .divider {
+    width: 1px;
+    height: 1.25rem;
+    background-color: var(--border);
+  }
+
+  @media (max-width: 480px) {
+    .header-container {
+      padding-top: 0.75rem;
+      padding-bottom: 0.75rem;
+    }
+
+    .brand-title {
+      font-size: 1.1rem;
+    }
+
+    .social-list {
+      gap: 0.15rem;
+    }
+
+    .icon-link {
+      padding: 0.3rem;
+    }
+  }
+</style>

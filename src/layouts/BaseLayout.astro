@@ -1,0 +1,94 @@
+---
+// BaseLayout.astro
+import '../styles/theme.css';
+import FontLoader from '../components/FontLoader.astro';
+import Navbar from '../components/Navbar.astro';
+import { siteConfig } from '../../site.config';
+
+interface Props {
+  title?: string;
+  description?: string;
+  noIndex?: boolean;
+}
+
+const {
+  title = siteConfig.name,
+  description = siteConfig.description,
+  noIndex = false,
+} = Astro.props;
+
+const pageTitle = title === siteConfig.name ? title : `${title} · ${siteConfig.name}`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    {noIndex && <meta name="robots" content="noindex, nofollow" />}
+
+    <!-- Zero-flash theme initialization script -->
+    <script is:inline>
+      (function () {
+        try {
+          const stored = localStorage.getItem('theme');
+          if (stored === 'espresso' || stored === 'latte') {
+            document.documentElement.setAttribute('data-theme', stored);
+          } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.setAttribute('data-theme', 'espresso');
+          } else {
+            document.documentElement.setAttribute('data-theme', 'latte');
+          }
+        } catch (e) {
+          // Fallback to light if storage is blocked
+          document.documentElement.setAttribute('data-theme', 'latte');
+        }
+      })();
+    </script>
+
+    <FontLoader />
+  </head>
+  <body>
+    <Navbar />
+    <main id="main-content" class="main-content">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div class="container footer-container">
+        <p class="footer-text">
+          &copy; {new Date().getFullYear()} {siteConfig.author} · Built with Astro & Obsidian
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style>
+  .main-content {
+    flex: 1 0 auto;
+    padding-top: 2rem;
+    padding-bottom: 4rem;
+  }
+
+  .site-footer {
+    border-top: 1px solid var(--border-muted);
+    padding: 2rem 0;
+    margin-top: auto;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .footer-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+
+  .footer-text {
+    margin: 0;
+  }
+</style>

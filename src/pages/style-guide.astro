@@ -1,0 +1,363 @@
+---
+// style-guide.astro
+// Visual verification page for fonts, typography, and coffee themes (Latte & Espresso).
+// Excluded from sitemap and indexed searches.
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Design Style Guide" description="Typography and theme verification guide" noIndex={true}>
+  <div class="container style-guide-page">
+    <header class="guide-header">
+      <div class="badge">Internal Reference Only</div>
+      <h1>Design & Typography Style Guide</h1>
+      <p class="lead">
+        This page demonstrates all typographic scales, coffee-themed color variables, callouts, and code styling across both <strong>Latte (Light)</strong> and <strong>Espresso (Dark)</strong> palettes. Toggle the theme in the navigation bar to preview changes.
+      </p>
+    </header>
+
+    <hr />
+
+    <!-- Color Swatches & Contrast -->
+    <section class="guide-section">
+      <h2>1. Coffee Color Palette</h2>
+      <p class="section-desc">Zero pure white (#fff) or pure black (#000). Every color is tuned for warmth and WCAG AA contrast (&ge; 4.5:1 for body text, &ge; 3:1 for UI borders).</p>
+      
+      <div class="swatch-grid">
+        <div class="swatch-card" style="background-color: var(--bg); border: 1px solid var(--border);">
+          <span class="swatch-name">--bg</span>
+          <span class="swatch-role">Page Background</span>
+        </div>
+        <div class="swatch-card" style="background-color: var(--surface); border: 1px solid var(--border);">
+          <span class="swatch-name">--surface</span>
+          <span class="swatch-role">Cards & Tables</span>
+        </div>
+        <div class="swatch-card" style="background-color: var(--border); color: var(--text);">
+          <span class="swatch-name">--border</span>
+          <span class="swatch-role">Dividers & Borders</span>
+        </div>
+        <div class="swatch-card" style="background-color: var(--accent); color: var(--bg);">
+          <span class="swatch-name">--accent</span>
+          <span class="swatch-role">Brand & Focus</span>
+        </div>
+        <div class="swatch-card" style="background-color: var(--link); color: var(--bg);">
+          <span class="swatch-name">--link</span>
+          <span class="swatch-role">Interactive Links</span>
+        </div>
+        <div class="swatch-card" style="background-color: var(--code-bg); border: 1px solid var(--border);">
+          <span class="swatch-name">--code-bg</span>
+          <span class="swatch-role">Monospace Blocks</span>
+        </div>
+        <div class="swatch-card" style="background-color: var(--highlight); color: var(--text);">
+          <span class="swatch-name">--highlight</span>
+          <span class="swatch-role">Obsidian Mark</span>
+        </div>
+        <div class="swatch-card" style="background-color: var(--selection); color: var(--text);">
+          <span class="swatch-name">--selection</span>
+          <span class="swatch-role">Selected Text</span>
+        </div>
+      </div>
+    </section>
+
+    <hr />
+
+    <!-- Headings Hierarchy -->
+    <section class="guide-section">
+      <h2>2. Headings Scale (Fraunces Serif)</h2>
+      <p class="section-desc">Warm, soft serif font designed for character and readable hierarchy.</p>
+      
+      <div class="type-specimen">
+        <h1>Heading Level 1 — The Art of Roasting Coffee</h1>
+        <h2>Heading Level 2 — Espresso Extraction Dynamics</h2>
+        <h3>Heading Level 3 — Water Temperature and Grind Size</h3>
+        <h4>Heading Level 4 — Measuring Extraction Yield (TDS)</h4>
+        <h5>Heading Level 5 — Sensory Cupping Notes</h5>
+        <h6>Heading Level 6 — Origin Profiles: Ethiopia Yirgacheffe</h6>
+      </div>
+    </section>
+
+    <hr />
+
+    <!-- Body & Inline Typography -->
+    <section class="guide-section">
+      <h2>3. Body Typography & Inline Formatting (Source Serif 4)</h2>
+      <p class="section-desc">Optimized for prolonged digital reading with humanist proportions and gentle optical contrast.</p>
+
+      <p>
+        Good typography in an essay creates a quiet rhythm. As Robert Bringhurst observed in <em>The Elements of Typographic Style</em>, typography exists to honor content. When reading technical articles, clarity of hierarchy and comfortable line spacing (<mark>line-height: 1.75</mark>) reduce eye fatigue.
+      </p>
+
+      <p>
+        You can express emphasis using <strong>bold text for core concepts</strong>, <em>italic text for nuances or titles</em>, <del>strikethrough for deprecated ideas</del>, and ==Obsidian highlights== (rendered via <mark class="highlight">mark tag</mark>) for key takeaways. Here is an example of an <a href="#links">inline hyperlink with subtle underline</a> and a <a href="https://example.com" target="_blank" rel="noopener noreferrer">visited / external destination</a>.
+      </p>
+
+      <p>
+        For technical explanations, inline code references such as <code>git log --follow --diff-filter=A</code> or <code>site.config.ts</code> feature clear boundary styling with self-hosted <strong>JetBrains Mono</strong>.
+      </p>
+    </section>
+
+    <hr />
+
+    <!-- Blockquotes -->
+    <section class="guide-section">
+      <h2>4. Blockquotes</h2>
+      <p class="section-desc">Obsidian-style reading view quotes with accent borders and surface background.</p>
+
+      <blockquote>
+        <p>
+          "Coffee is a language in itself. The craft of brewing parallels the craft of writing: both demand patience, precise measurement, and reverence for raw materials."
+        </p>
+      </blockquote>
+    </section>
+
+    <hr />
+
+    <!-- Lists -->
+    <section class="guide-section">
+      <h2>5. Lists & Task Items</h2>
+      <div class="lists-grid">
+        <div>
+          <h3>Unordered List</h3>
+          <ul>
+            <li>Single-origin washed coffees
+              <ul>
+                <li>Ethiopian heirloom varietals (floral, bergamot)</li>
+                <li>Kenyan SL28 & SL34 (blackcurrant, bright phosphoric acidity)</li>
+              </ul>
+            </li>
+            <li>Natural process micro-lots (strawberry, dark chocolate)</li>
+            <li>Anaerobic slow-dry fermentations</li>
+          </ul>
+        </div>
+
+        <div>
+          <h3>Ordered List</h3>
+          <ol>
+            <li>Measure 18.0 grams of freshly roasted whole beans.</li>
+            <li>Grind fine with minimal fines distribution.</li>
+            <li>Distribute evenly using a needle WDT tool.</li>
+            <li>Tamp level at 25 lbs of pressure.</li>
+            <li>Extract 36 grams of espresso in 28 to 32 seconds.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <hr />
+
+    <!-- Obsidian Callouts -->
+    <section class="guide-section">
+      <h2>6. Obsidian Callouts</h2>
+      <p class="section-desc">Muted, coffee-harmonized tones matching both Latte and Espresso palettes.</p>
+
+      <div class="callout" data-callout="note">
+        <div class="callout-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          Note Callout
+        </div>
+        <p>This is a standard informational callout. All font weights and borders adhere to strict AA contrast guidelines.</p>
+      </div>
+
+      <div class="callout" data-callout="tip">
+        <div class="callout-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+          Tip / Recommendation
+        </div>
+        <p>Use pre-infusion for 5 seconds at low bar pressure when brewing light roasts to avoid channeling.</p>
+      </div>
+
+      <div class="callout" data-callout="warning">
+        <div class="callout-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          Warning
+        </div>
+        <p>Water hardness above 150 ppm CaCO3 will cause scale buildup and dull fruit-forward cup acidity.</p>
+      </div>
+
+      <div class="callout" data-callout="danger">
+        <div class="callout-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+          Danger / Caution
+        </div>
+        <p>Never adjust the grinder burr distance while the motor is stopped with beans trapped between the teeth.</p>
+      </div>
+    </section>
+
+    <hr />
+
+    <!-- Code Block -->
+    <section class="guide-section">
+      <h2>7. Code & Syntax Highlighting (JetBrains Mono)</h2>
+      <p class="section-desc">Warm Shiki code styling with zero neon colors.</p>
+
+      <pre is:raw><code class="language-typescript">// Example: Git date resolution utility
+import { execSync } from 'node:child_process';
+
+interface CommitDates {
+  published: Date;
+  modified?: Date;
+}
+
+export function getFileGitDates(filePath: string): CommitDates {
+  const firstCommit = execSync(`git log --follow --diff-filter=A --format=%aI "${filePath}"`)
+    .toString()
+    .trim()
+    .split('\n')[0];
+
+  const lastCommit = execSync(`git log --follow -1 --format=%aI "${filePath}"`)
+    .toString()
+    .trim();
+
+  return {
+    published: new Date(firstCommit),
+    modified: lastCommit !== firstCommit ? new Date(lastCommit) : undefined,
+  };
+}</code></pre>
+    </section>
+
+    <hr />
+
+    <!-- Tables -->
+    <section class="guide-section">
+      <h2>8. Tables</h2>
+      <p class="section-desc">Responsive, striped tables with surface styling.</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Role</th>
+            <th>Configured Font</th>
+            <th>Source</th>
+            <th>Weights</th>
+            <th>WCAG Contrast</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Heading</strong></td>
+            <td>Fraunces</td>
+            <td>@fontsource</td>
+            <td>600, 700</td>
+            <td>11.75 : 1 (Pass AAA)</td>
+          </tr>
+          <tr>
+            <td><strong>Body</strong></td>
+            <td>Source Serif 4</td>
+            <td>@fontsource</td>
+            <td>400, 600</td>
+            <td>11.75 : 1 (Pass AAA)</td>
+          </tr>
+          <tr>
+            <td><strong>Code</strong></td>
+            <td>JetBrains Mono</td>
+            <td>@fontsource</td>
+            <td>400, 500</td>
+            <td>11.75 : 1 (Pass AAA)</td>
+          </tr>
+          <tr>
+            <td><strong>Muted UI</strong></td>
+            <td>Source Serif 4</td>
+            <td>@fontsource</td>
+            <td>400</td>
+            <td>5.03 : 1 (Pass AA)</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .style-guide-page {
+    padding-bottom: 3rem;
+  }
+
+  .guide-header {
+    margin-bottom: 2rem;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background-color: var(--surface);
+    color: var(--accent);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    font-family: var(--font-code);
+  }
+
+  .lead {
+    font-size: 1.15rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .guide-section {
+    margin: 2.5rem 0;
+  }
+
+  .section-desc {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .swatch-card {
+    padding: 1.25rem 0.85rem;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .swatch-name {
+    font-family: var(--font-code);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .swatch-role {
+    font-size: 0.75rem;
+    opacity: 0.85;
+  }
+
+  .type-specimen {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .type-specimen h1,
+  .type-specimen h2,
+  .type-specimen h3,
+  .type-specimen h4,
+  .type-specimen h5,
+  .type-specimen h6 {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .lists-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  @media (min-width: 640px) {
+    .lists-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>

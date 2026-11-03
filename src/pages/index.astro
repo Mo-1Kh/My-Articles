@@ -1,0 +1,51 @@
+---
+// index.astro - Initial placeholder for Phase 1
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { siteConfig, getPath } from '../../site.config';
+
+const styleGuideUrl = getPath('/style-guide/');
+---
+
+<BaseLayout title={siteConfig.name} description={siteConfig.description}>
+  <div class="container home-placeholder">
+    <h1>{siteConfig.name}</h1>
+    <p class="subtitle">{siteConfig.description}</p>
+
+    <div class="phase-notice">
+      <h2>Phase 1 Foundation Ready</h2>
+      <p>
+        The Astro scaffold, warm coffee theme system (Latte & Espresso), self-hosted typography (Fraunces, Source Serif 4, JetBrains Mono), and zero-flash theme switcher are now configured.
+      </p>
+      <p>
+        Visit the <a href={styleGuideUrl}><strong>Design & Typography Style Guide</strong></a> to evaluate all font weights, callouts, and contrast ratios.
+      </p>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .home-placeholder {
+    padding-top: 2rem;
+  }
+
+  .subtitle {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+  }
+
+  .phase-notice {
+    padding: 1.5rem;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-top: 1.5rem;
+  }
+
+  .phase-notice h2 {
+    margin-top: 0;
+    font-size: 1.35rem;
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+</style>
