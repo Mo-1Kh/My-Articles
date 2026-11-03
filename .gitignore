@@ -1,6 +1,7 @@
 # Build output
 dist/
 .astro/
+public/images/optimized/
 
 # Dependencies
 node_modules/

@@ -5,6 +5,7 @@ import { getGroupedCategories, type Article } from '../../lib/articles';
 import { render } from 'astro:content';
 import { getPath } from '../../../site.config';
 import { calculateReadingTime } from '../../lib/reading-time';
+import ImageLightbox from '../../components/ImageLightbox.astro';
 
 export async function getStaticPaths() {
   const categories = await getGroupedCategories();
@@ -140,6 +141,8 @@ function formatDate(date: Date): string {
       window.addEventListener('theme-change', initMermaid);
     </script>
   )}
+
+  <ImageLightbox />
 </BaseLayout>
 
 <style>

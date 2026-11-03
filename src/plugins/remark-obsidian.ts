@@ -4,6 +4,7 @@ import { visit } from 'unist-util-visit';
 import fs from 'node:fs';
 import path from 'node:path';
 import { slugify } from '../lib/slug.js';
+import { scanAndOptimizeImages, resolveImage } from '../lib/images.js';
 
 interface WikiTarget {
   categorySlug: string;
@@ -64,7 +65,10 @@ function buildVaultMap(): Map<string, WikiTarget> {
 export function remarkObsidian() {
   const vaultMap = buildVaultMap();
 
-  return (tree: any) => {
+  return async (tree: any) => {
+    // Scan and optimize all vault images
+    await scanAndOptimizeImages();
+
     // 1. First pass: strip Obsidian %% comments %% across all text nodes
     visit(tree, 'text', (node: any) => {
       if (node.value && node.value.includes('%%')) {
@@ -121,11 +125,25 @@ export function remarkObsidian() {
           // 2a. Embed: ![[image.png|width]]
           if (matchedStr.startsWith('![[')) {
             const inner = match[2];
-            const [target, width] = inner.split('|').map((s: string) => s.trim());
-            newChildren.push({
-              type: 'html',
-              value: `<img src="${target.startsWith('/') ? target : `/${target}`}" alt="${target}" ${width ? `width="${width}" style="max-width: 100%; width: ${width}px;"` : 'style="max-width: 100%;"'} loading="lazy" />`,
-            });
+            const [target, widthParam] = inner.split('|').map((s: string) => s.trim());
+            const imgInfo = resolveImage(target);
+
+            if (imgInfo) {
+              const explicitWidth = widthParam ? parseInt(widthParam, 10) : null;
+              const renderWidth = explicitWidth || imgInfo.width;
+              const renderHeight = Math.round(renderWidth * (imgInfo.height / imgInfo.width));
+
+              newChildren.push({
+                type: 'html',
+                value: `<figure class="article-image-figure"><img src="${imgInfo.optimizedUrl}" alt="${imgInfo.filename}" width="${renderWidth}" height="${renderHeight}" loading="lazy" decoding="async" class="zoomable-image" style="aspect-ratio: ${renderWidth} / ${renderHeight};" /><figcaption>${imgInfo.filename}</figcaption></figure>`,
+              });
+            } else {
+              // Missing image reported
+              newChildren.push({
+                type: 'html',
+                value: `<div class="missing-image-alert" role="alert"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> Missing image: <code>${target}</code></div>`,
+              });
+            }
           }
           // 2b. Wikilink: [[target#heading|alias]]
           else if (matchedStr.startsWith('[[')) {
@@ -195,6 +213,25 @@ export function remarkObsidian() {
       }
 
       paragraphNode.children = newChildren;
+    });
+
+    // 4. Process standard markdown images ![alt](url)
+    visit(tree, 'image', (node: any, index: any, parent: any) => {
+      const cleanUrl = decodeURIComponent(node.url);
+      const imgInfo = resolveImage(cleanUrl);
+
+      if (imgInfo && parent && typeof index === 'number') {
+        const alt = node.alt || imgInfo.filename;
+        parent.children[index] = {
+          type: 'html',
+          value: `<figure class="article-image-figure"><img src="${imgInfo.optimizedUrl}" alt="${alt}" width="${imgInfo.width}" height="${imgInfo.height}" loading="lazy" decoding="async" class="zoomable-image" style="aspect-ratio: ${imgInfo.width} / ${imgInfo.height};" /><figcaption>${alt}</figcaption></figure>`,
+        };
+      } else if (!imgInfo && parent && typeof index === 'number') {
+        parent.children[index] = {
+          type: 'html',
+          value: `<div class="missing-image-alert" role="alert"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> Missing image: <code>${node.url}</code></div>`,
+        };
+      }
     });
   };
 }

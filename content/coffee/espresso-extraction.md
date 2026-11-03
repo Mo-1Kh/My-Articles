@@ -11,6 +11,12 @@ published: "2024-01-10"
 
 Espresso is an emulsion created by forcing near-boiling water through a finely ground, tamped bed of roasted coffee beans at high pressure (typically 6 to 9 bars).
 
+![[espresso-crema.png|350]]
+
+![[v60-dripper.png]]
+
+![[missing-sample-image.png]]
+
 See also our guide on [[pour-over-brewing|Mastering the V60 Pour Over Technique]] and check out [[pour-over-brewing#The Recipe|the V60 recipe]]. Here is a broken wikilink test: [[non-existent-note|Unknown Article]].
 
 Related tags: #coffee #espresso #fluid-dynamics

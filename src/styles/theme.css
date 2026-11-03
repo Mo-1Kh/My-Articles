@@ -366,3 +366,54 @@ hr {
   border-top: 1px solid var(--border);
   margin: 2.5em 0;
 }
+
+/* ==========================================================================
+   IMAGE & ATTACHMENT STYLING (Phase 5)
+   Zero Layout Shift (CLS: 0), intrinsic sizing, and lightbox zoom
+   ========================================================================== */
+
+.article-image-figure {
+  margin: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.article-image-figure img,
+.article-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  cursor: zoom-in;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.article-image-figure img:hover,
+.article-body img:hover {
+  opacity: 0.96;
+}
+
+figcaption {
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.6rem;
+  text-align: center;
+  font-style: italic;
+}
+
+.missing-image-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1.5rem 0;
+  padding: 0.75rem 1rem;
+  background-color: var(--surface);
+  border: 1px dashed var(--callout-warning-border);
+  border-radius: 6px;
+  color: var(--callout-warning-border);
+  font-family: var(--font-code);
+  font-size: 0.85rem;
+}

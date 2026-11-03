@@ -1,0 +1,171 @@
+---
+// ImageLightbox.astro
+// Accessible click-to-zoom modal for article images with smooth transitions and keyboard navigation.
+---
+
+<div id="image-lightbox" class="lightbox-overlay" role="dialog" aria-modal="true" aria-label="Expanded image preview" hidden>
+  <button id="lightbox-close" class="lightbox-close-btn" type="button" aria-label="Close enlarged view">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </button>
+  <div class="lightbox-content">
+    <img id="lightbox-img" class="lightbox-image" src="" alt="" />
+    <p id="lightbox-caption" class="lightbox-caption"></p>
+  </div>
+</div>
+
+<style>
+  .lightbox-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(29, 21, 16, 0.88);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease-in-out;
+  }
+
+  .lightbox-overlay:not([hidden]) {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .lightbox-close-btn {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .lightbox-close-btn:hover {
+    background-color: var(--surface);
+    border-color: var(--accent);
+  }
+
+  .lightbox-content {
+    max-width: 90vw;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .lightbox-image {
+    max-width: 100%;
+    max-height: 75vh;
+    object-fit: contain;
+    border-radius: 6px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    transform: scale(0.95);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .lightbox-overlay:not([hidden]) .lightbox-image {
+    transform: scale(1);
+  }
+
+  .lightbox-caption {
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
+    color: var(--text);
+    text-align: center;
+    margin: 0;
+    max-width: 650px;
+  }
+
+  :global(.zoomable-image) {
+    cursor: zoom-in;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  :global(.zoomable-image:hover) {
+    opacity: 0.95;
+  }
+</style>
+
+<script>
+  function setupLightbox() {
+    const lightbox = document.getElementById('image-lightbox');
+    const lightboxImg = document.getElementById('lightbox-img') as HTMLImageElement;
+    const lightboxCaption = document.getElementById('lightbox-caption');
+    const closeBtn = document.getElementById('lightbox-close');
+    let lastActiveElement: HTMLElement | null = null;
+
+    if (!lightbox || !lightboxImg || !lightboxCaption || !closeBtn) return;
+
+    function openLightbox(img: HTMLImageElement) {
+      if (!lightbox || !lightboxImg || !lightboxCaption || !closeBtn) return;
+      lastActiveElement = document.activeElement as HTMLElement | null;
+      lightboxImg.src = img.currentSrc || img.src;
+      lightboxImg.alt = img.alt || '';
+      lightboxCaption.textContent = img.alt || img.title || '';
+      lightbox.removeAttribute('hidden');
+      document.body.style.overflow = 'hidden';
+      closeBtn.focus();
+    }
+
+    function closeLightbox() {
+      if (!lightbox) return;
+      lightbox.setAttribute('hidden', '');
+      document.body.style.overflow = '';
+      if (lastActiveElement) {
+        lastActiveElement.focus();
+      }
+    }
+
+    // Attach click listeners to all article images
+    const images = document.querySelectorAll<HTMLImageElement>('.article-body img');
+    images.forEach((img) => {
+      img.classList.add('zoomable-image');
+      img.setAttribute('tabindex', '0');
+      img.setAttribute('role', 'button');
+      img.setAttribute('aria-label', `Zoom image: ${img.alt || 'article image'}`);
+
+      img.addEventListener('click', () => openLightbox(img));
+      img.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openLightbox(img);
+        }
+      });
+    });
+
+    closeBtn.addEventListener('click', closeLightbox);
+
+    lightbox.addEventListener('click', (e) => {
+      if (e.target === lightbox) {
+        closeLightbox();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !lightbox.hasAttribute('hidden')) {
+        closeLightbox();
+      }
+    });
+  }
+
+  setupLightbox();
+  document.addEventListener('astro:after-swap', setupLightbox);
+</script>
