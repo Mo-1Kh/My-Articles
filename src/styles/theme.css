@@ -5,114 +5,132 @@
    All text/surface pairs verified for WCAG AA contrast.
    ========================================================================== */
 
-/* Light Brown Palette */
+/* Light Brown Palette (User requested: #CFAD85) */
 :root,
 [data-theme="latte"] {
-  --bg: #F4EBE1;
-  --surface: #E8DBCB;
-  --border: #D4C2AD;
-  --border-muted: #E2D3C2;
-  --text: #382518;
-  --text-muted: #6B503D;
-  --accent: #8B572A;
-  --link: #7C461E;
-  --link-hover: #562E12;
-  --code-bg: #E6D8C6;
-  --highlight: #ECD298;
-  --selection: #DFCBB5;
+  --bg: #CFAD85;
+  --surface: #DFC7A9;
+  --border: #B8946C;
+  --border-muted: #C5A37B;
+  --text: #211409;
+  --text-muted: #543B25;
+  --accent: #5C2E0B;
+  --link: #4E2408;
+  --link-hover: #2E1404;
+  --code-bg: #C39D71;
+  --highlight: #E8D2AA;
+  --selection: #BA956D;
 
   /* Callouts (Muted, warm brown tones) */
-  --callout-note-bg: #EAE1D6;
-  --callout-note-border: #6B5B4E;
-  --callout-tip-bg: #E5EAD9;
-  --callout-tip-border: #4D683E;
-  --callout-warning-bg: #F5E7D1;
-  --callout-warning-border: #8D571C;
-  --callout-danger-bg: #F4E0DC;
-  --callout-danger-border: #993A2D;
+  --callout-note-bg: #C5A57E;
+  --callout-note-border: #3E2310;
+  --callout-tip-bg: #BDC49D;
+  --callout-tip-border: #2B441B;
+  --callout-warning-bg: #DEB988;
+  --callout-warning-border: #6B3B0C;
+  --callout-danger-bg: #DDB2A4;
+  --callout-danger-border: #7A2218;
 
-  /* Syntax Highlighting */
-  --shiki-color-text: #382518;
-  --shiki-color-background: #E6D8C6;
-  --shiki-token-comment: #7D6A5A;
-  --shiki-token-keyword: #8C3B18;
-  --shiki-token-string: #4F6C35;
-  --shiki-token-function: #7C461E;
-  --shiki-token-constant: #A25227;
+  /* Syntax Highlighting (Astro & Shiki css-variables) */
+  --astro-code-foreground: #211409;
+  --astro-code-background: #C39D71;
+  --astro-code-color-text: #211409;
+  --astro-code-color-background: #C39D71;
+  --astro-code-token-comment: #6E553F;
+  --astro-code-token-keyword: #7A2906;
+  --astro-code-token-string: #3D531F;
+  --astro-code-token-string-expression: #3D531F;
+  --astro-code-token-function: #5B2E0E;
+  --astro-code-token-constant: #8B3A0D;
+  --astro-code-token-parameter: #683515;
+  --astro-code-token-punctuation: #3D2614;
+  --astro-code-token-link: #4E2408;
 
   color-scheme: light;
 }
 
-/* Dark Brown Palette */
+/* Dark Brown Palette (User requested: #211409) */
 [data-theme="espresso"] {
-  --bg: #1D1510;
-  --surface: #291E18;
-  --border: #3E2E24;
-  --border-muted: #34251C;
-  --text: #E8DAC8;
-  --text-muted: #B09C87;
-  --accent: #D29C6A;
-  --link: #DEAB7C;
-  --link-hover: #F0C49B;
-  --code-bg: #241A14;
-  --highlight: #5E4424;
-  --selection: #4D3728;
+  --bg: #211409;
+  --surface: #2E1D10;
+  --border: #442D1A;
+  --border-muted: #362213;
+  --text: #F3E4D3;
+  --text-muted: #BFA893;
+  --accent: #CFAD85;
+  --link: #DFC09B;
+  --link-hover: #F8E8D5;
+  --code-bg: #180D05;
+  --highlight: #52381F;
+  --selection: #4B301A;
 
   /* Callouts (Muted, warm brown tones) */
-  --callout-note-bg: #261F1B;
-  --callout-note-border: #A39688;
-  --callout-tip-bg: #21291F;
-  --callout-tip-border: #91AC7F;
-  --callout-warning-bg: #2E2217;
-  --callout-warning-border: #D49959;
-  --callout-danger-bg: #2E1B19;
-  --callout-danger-border: #D47568;
+  --callout-note-bg: #2C1E14;
+  --callout-note-border: #BAA18B;
+  --callout-tip-bg: #1B2A19;
+  --callout-tip-border: #8FAF7D;
+  --callout-warning-bg: #342211;
+  --callout-warning-border: #E09F53;
+  --callout-danger-bg: #351713;
+  --callout-danger-border: #DE6B5B;
 
-  /* Syntax Highlighting */
-  --shiki-color-text: #E8DAC8;
-  --shiki-color-background: #241A14;
-  --shiki-token-comment: #8F7C6B;
-  --shiki-token-keyword: #E28F6C;
-  --shiki-token-string: #A7CB8F;
-  --shiki-token-function: #DEAB7C;
-  --shiki-token-constant: #EDB986;
+  /* Syntax Highlighting (Astro & Shiki css-variables) */
+  --astro-code-foreground: #F3E4D3;
+  --astro-code-background: #180D05;
+  --astro-code-color-text: #F3E4D3;
+  --astro-code-color-background: #180D05;
+  --astro-code-token-comment: #9E8873;
+  --astro-code-token-keyword: #F0A370;
+  --astro-code-token-string: #B5DC97;
+  --astro-code-token-string-expression: #B5DC97;
+  --astro-code-token-function: #F5C88A;
+  --astro-code-token-constant: #FFB97A;
+  --astro-code-token-parameter: #E9BA9C;
+  --astro-code-token-punctuation: #C5B099;
+  --astro-code-token-link: #DFC09B;
 
   color-scheme: dark;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="latte"]) {
-    --bg: #1D1510;
-    --surface: #291E18;
-    --border: #3E2E24;
-    --border-muted: #34251C;
-    --text: #E8DAC8;
-    --text-muted: #B09C87;
-    --accent: #D29C6A;
-    --link: #DEAB7C;
-    --link-hover: #F0C49B;
-    --code-bg: #241A14;
-    --highlight: #5E4424;
-    --selection: #4D3728;
+    --bg: #211409;
+    --surface: #2E1D10;
+    --border: #442D1A;
+    --border-muted: #362213;
+    --text: #F3E4D3;
+    --text-muted: #BFA893;
+    --accent: #CFAD85;
+    --link: #DFC09B;
+    --link-hover: #F8E8D5;
+    --code-bg: #180D05;
+    --highlight: #52381F;
+    --selection: #4B301A;
 
     /* Callouts (Muted, warm brown tones) */
-    --callout-note-bg: #261F1B;
-    --callout-note-border: #A39688;
-    --callout-tip-bg: #21291F;
-    --callout-tip-border: #91AC7F;
-    --callout-warning-bg: #2E2217;
-    --callout-warning-border: #D49959;
-    --callout-danger-bg: #2E1B19;
-    --callout-danger-border: #D47568;
+    --callout-note-bg: #2C1E14;
+    --callout-note-border: #BAA18B;
+    --callout-tip-bg: #1B2A19;
+    --callout-tip-border: #8FAF7D;
+    --callout-warning-bg: #342211;
+    --callout-warning-border: #E09F53;
+    --callout-danger-bg: #351713;
+    --callout-danger-border: #DE6B5B;
 
-    /* Syntax Highlighting */
-    --shiki-color-text: #E8DAC8;
-    --shiki-color-background: #241A14;
-    --shiki-token-comment: #8F7C6B;
-    --shiki-token-keyword: #E28F6C;
-    --shiki-token-string: #A7CB8F;
-    --shiki-token-function: #DEAB7C;
-    --shiki-token-constant: #EDB986;
+    /* Syntax Highlighting (Astro & Shiki css-variables) */
+    --astro-code-foreground: #F3E4D3;
+    --astro-code-background: #180D05;
+    --astro-code-color-text: #F3E4D3;
+    --astro-code-color-background: #180D05;
+    --astro-code-token-comment: #9E8873;
+    --astro-code-token-keyword: #F0A370;
+    --astro-code-token-string: #B5DC97;
+    --astro-code-token-string-expression: #B5DC97;
+    --astro-code-token-function: #F5C88A;
+    --astro-code-token-constant: #FFB97A;
+    --astro-code-token-parameter: #E9BA9C;
+    --astro-code-token-punctuation: #C5B099;
+    --astro-code-token-link: #DFC09B;
 
     color-scheme: dark;
   }
@@ -277,16 +295,20 @@ code, kbd, samp {
   font-family: var(--font-code);
   font-size: 0.88em;
   background-color: var(--code-bg);
+  color: var(--text);
   padding: 0.15em 0.35em;
   border-radius: 4px;
   border: 1px solid var(--border-muted);
 }
 
-pre {
+pre,
+pre.astro-code,
+.astro-code {
   font-family: var(--font-code);
   font-size: 0.9em;
   line-height: 1.6;
-  background-color: var(--code-bg);
+  background-color: var(--code-bg) !important;
+  color: var(--text) !important;
   padding: 1.1em;
   border-radius: 6px;
   border: 1px solid var(--border);
@@ -294,8 +316,10 @@ pre {
   margin: 1.5em 0;
 }
 
-pre code {
-  background-color: transparent;
+pre code,
+pre.astro-code code {
+  background-color: transparent !important;
+  color: inherit !important;
   padding: 0;
   border: none;
   font-size: 1em;
@@ -416,4 +440,137 @@ figcaption {
   color: var(--callout-warning-border);
   font-family: var(--font-code);
   font-size: 0.85rem;
+}
+
+/* ==========================================================================
+   ARTICLE TWO-COLUMN TOC LAYOUT (Phase 6)
+   Guarantees desktop sticky sidebar stays beside the article at all times
+   ========================================================================== */
+
+.article-layout {
+  display: block;
+  position: relative;
+}
+
+@media (min-width: 1024px) {
+  .article-page.has-toc {
+    max-width: 1060px !important;
+  }
+
+  .article-layout.has-toc {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: stretch !important;
+    gap: 3.5rem !important;
+  }
+
+  .article-layout.has-toc .article-main {
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
+    max-width: 720px !important;
+  }
+
+  .article-layout.has-toc .toc-desktop {
+    display: block !important;
+    width: 240px !important;
+    flex-shrink: 0 !important;
+  }
+}
+
+/* ==========================================================================
+   ACCESSIBILITY & FOCUS STATES (Phase 6)
+   ========================================================================== */
+
+:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 3px !important;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   PRINT STYLESHEET (Phase 6)
+   Clean, paper-optimized layout for physical printing
+   ========================================================================== */
+
+@media print {
+  /* Hide non-printable web UI elements */
+  .site-header,
+  .site-footer,
+  .theme-toggle,
+  .toc-desktop,
+  .toc-mobile,
+  .reading-progress-bar,
+  .back-to-top-btn,
+  .comments-section,
+  .article-pagination,
+  .home-return,
+  .code-copy-btn,
+  .heading-anchor,
+  .external-link-icon,
+  #image-lightbox {
+    display: none !important;
+  }
+
+  /* Reset to paper white and ink black */
+  html, body {
+    background: #ffffff !important;
+    color: #111111 !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+  }
+
+  .container,
+  .article-page,
+  .article-body,
+  .article-content-wrapper {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Expand URLs after outbound links */
+  .article-body a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    color: #444444;
+  }
+
+  /* Avoid orphan headers and awkward block breaks */
+  h1, h2, h3, h4, h5, h6 {
+    break-after: avoid;
+    page-break-after: avoid;
+    color: #000000 !important;
+  }
+
+  pre, blockquote, figure, .callout, table, tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  pre.astro-code {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    background: #f7f7f7 !important;
+    color: #222222 !important;
+    border: 1px solid #cccccc !important;
+  }
 }

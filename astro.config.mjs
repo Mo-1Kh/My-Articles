@@ -21,10 +21,7 @@ export default defineConfig({
     remarkPlugins: [remarkObsidian, remarkMath],
     rehypePlugins: [rehypeObsidianCallouts, rehypeKatex],
     shikiConfig: {
-      themes: {
-        light: 'catppuccin-latte',
-        dark: 'catppuccin-mocha',
-      },
+      theme: 'css-variables',
       wrap: true,
     },
   },

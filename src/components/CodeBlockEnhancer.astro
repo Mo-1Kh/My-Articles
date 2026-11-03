@@ -1,0 +1,172 @@
+---
+// src/components/CodeBlockEnhancer.astro
+// Adds language labels, copy buttons with visual feedback, and responsive horizontal scroll
+---
+
+<style is:global>
+  .code-block-container {
+    position: relative;
+    margin: 1.75rem 0;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background-color: var(--code-bg);
+    overflow: hidden;
+  }
+
+  .code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0.85rem;
+    background-color: var(--surface);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-code);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    user-select: none;
+  }
+
+  .code-lang-label {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+
+  .code-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    padding: 0.25rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-family: var(--font-code);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .code-copy-btn:hover {
+    color: var(--accent);
+    background-color: var(--bg);
+    border-color: var(--border);
+  }
+
+  .code-copy-btn.copied {
+    color: var(--callout-tip-border);
+    background-color: var(--callout-tip-bg);
+    border-color: var(--callout-tip-border);
+  }
+
+  .code-block-container pre.astro-code {
+    margin: 0 !important;
+    padding: 1rem 1.15rem !important;
+    border: none !important;
+    border-radius: 0 !important;
+    overflow-x: auto !important;
+    white-space: pre !important;
+    word-break: normal !important;
+    font-family: var(--font-code);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    background-color: var(--code-bg) !important;
+    color: var(--text) !important;
+  }
+
+  .code-block-container pre.astro-code code {
+    background-color: transparent !important;
+    color: inherit !important;
+    font-family: inherit;
+    font-size: inherit;
+  }
+</style>
+
+<script>
+  function enhanceCodeBlocks() {
+    // Find all astro code blocks in article body, excluding mermaid blocks
+    const codeBlocks = document.querySelectorAll<HTMLPreElement>('.article-body pre.astro-code');
+
+    codeBlocks.forEach((pre) => {
+      // Avoid wrapping twice
+      if (pre.parentElement?.classList.contains('code-block-container')) return;
+
+      // Extract language
+      let lang = pre.getAttribute('data-language') || '';
+      if (!lang) {
+        const classNames = pre.className.split(' ');
+        for (const cls of classNames) {
+          if (cls.startsWith('lang-') || cls.startsWith('language-')) {
+            lang = cls.replace(/^(lang-|language-)/, '');
+            break;
+          }
+        }
+      }
+      if (!lang) lang = 'code';
+
+      // Create container wrapper
+      const container = document.createElement('div');
+      container.className = 'code-block-container';
+
+      // Create header bar
+      const header = document.createElement('div');
+      header.className = 'code-block-header';
+
+      const langLabel = document.createElement('span');
+      langLabel.className = 'code-lang-label';
+      langLabel.textContent = lang;
+
+      const copyBtn = document.createElement('button');
+      copyBtn.type = 'button';
+      copyBtn.className = 'code-copy-btn';
+      copyBtn.setAttribute('aria-label', `Copy ${lang} code`);
+      copyBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        <span class="copy-text">Copy</span>
+      `;
+
+      copyBtn.addEventListener('click', async () => {
+        const codeElement = pre.querySelector('code');
+        const textToCopy = codeElement ? codeElement.innerText : pre.innerText;
+
+        try {
+          await navigator.clipboard.writeText(textToCopy);
+          copyBtn.classList.add('copied');
+          copyBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span class="copy-text">Copied!</span>
+          `;
+
+          setTimeout(() => {
+            copyBtn.classList.remove('copied');
+            copyBtn.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span class="copy-text">Copy</span>
+            `;
+          }, 2000);
+        } catch (err) {
+          console.error('Failed to copy code: ', err);
+        }
+      });
+
+      header.appendChild(langLabel);
+      header.appendChild(copyBtn);
+
+      // Insert container in place of pre
+      pre.parentNode?.insertBefore(container, pre);
+      container.appendChild(header);
+      container.appendChild(pre);
+    });
+  }
+
+  enhanceCodeBlocks();
+  document.addEventListener('astro:after-swap', enhanceCodeBlocks);
+</script>

@@ -1,0 +1,76 @@
+---
+// src/components/HeadingAnchors.astro
+// Adds subtle hover/focus anchor links to all h2 and h3 headings in articles
+---
+
+<style is:global>
+  .article-body h2,
+  .article-body h3 {
+    position: relative;
+    scroll-margin-top: 5rem;
+  }
+
+  .heading-anchor {
+    display: inline-block;
+    margin-left: 0.45rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: normal;
+    font-size: 0.85em;
+    opacity: 0;
+    transition: opacity 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    user-select: none;
+    padding: 0 0.25rem;
+    border-radius: 3px;
+  }
+
+  .article-body h2:hover .heading-anchor,
+  .article-body h3:hover .heading-anchor,
+  .heading-anchor:focus-visible {
+    opacity: 1;
+    color: var(--accent);
+  }
+
+  .heading-anchor:hover {
+    color: var(--link-hover);
+    transform: scale(1.1);
+  }
+</style>
+
+<script>
+  function setupHeadingAnchors() {
+    const headings = document.querySelectorAll<HTMLHeadingElement>('.article-body h2, .article-body h3');
+
+    headings.forEach((heading) => {
+      if (!heading.id || heading.querySelector('.heading-anchor')) return;
+
+      const anchor = document.createElement('a');
+      anchor.href = `#${heading.id}`;
+      anchor.className = 'heading-anchor';
+      anchor.setAttribute('aria-label', `Permalink to section: ${heading.textContent?.trim() || ''}`);
+      anchor.innerHTML = '<span aria-hidden="true">#</span>';
+
+      anchor.addEventListener('click', async () => {
+        const url = `${window.location.origin}${window.location.pathname}#${heading.id}`;
+        try {
+          await navigator.clipboard.writeText(url);
+          // Briefly indicate copied state
+          const span = anchor.querySelector('span');
+          if (span) {
+            span.textContent = '✓';
+            setTimeout(() => {
+              span.textContent = '#';
+            }, 1500);
+          }
+        } catch {
+          // If clipboard fails, regular browser navigation proceeds
+        }
+      });
+
+      heading.appendChild(anchor);
+    });
+  }
+
+  setupHeadingAnchors();
+  document.addEventListener('astro:after-swap', setupHeadingAnchors);
+</script>

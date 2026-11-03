@@ -4,8 +4,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getGroupedCategories, type Article } from '../../lib/articles';
 import { render } from 'astro:content';
 import { getPath } from '../../../site.config';
-import { calculateReadingTime } from '../../lib/reading-time';
+import { calculateReadingTime, countWords } from '../../lib/reading-time';
 import ImageLightbox from '../../components/ImageLightbox.astro';
+import ReadingProgressBar from '../../components/ReadingProgressBar.astro';
+import TableOfContents from '../../components/TableOfContents.astro';
+import CodeBlockEnhancer from '../../components/CodeBlockEnhancer.astro';
+import HeadingAnchors from '../../components/HeadingAnchors.astro';
+import BackToTop from '../../components/BackToTop.astro';
+import ExternalLinks from '../../components/ExternalLinks.astro';
 
 export async function getStaticPaths() {
   const categories = await getGroupedCategories();
@@ -42,9 +48,15 @@ interface Props {
 }
 
 const { article, prevArticle, nextArticle } = Astro.props;
-const { Content } = await render(article.entry);
+const { Content, headings } = await render(article.entry);
 
 const readingTime = calculateReadingTime(article.rawBody);
+const wordCount = countWords(article.rawBody);
+const tocHeadings = headings.filter(
+  (h) => (h.depth === 2 || h.depth === 3) && h.slug !== 'footnote-label' && h.text.toLowerCase() !== 'footnotes'
+);
+// Section 10: Hidden on short articles (fewer than 3 headings or fewer than 400 words)
+const showToc = tocHeadings.length >= 3 && wordCount >= 400;
 
 // Detect if math or mermaid diagrams are present to conditionally load dependencies
 const hasMath = /\$|\\\(|\\\[/.test(article.rawBody);
@@ -63,9 +75,10 @@ function formatDate(date: Date): string {
 ---
 
 <BaseLayout title={article.title} description={article.description}>
+  <ReadingProgressBar />
   {hasMath && <link rel="stylesheet" href={katexCssUrl} />}
 
-  <article class="container article-page">
+  <article class:list={['container', 'article-page', { 'has-toc': showToc }]}>
     <header class="article-header">
       <div class="article-meta">
         <span class="meta-category">{article.category}</span>
@@ -88,8 +101,15 @@ function formatDate(date: Date): string {
       <h1 class="article-title">{article.title}</h1>
     </header>
 
-    <div class="article-body">
-      <Content />
+    <div class:list={['article-layout', { 'has-toc': showToc }]}>
+      <div class="article-main">
+        {showToc && <TableOfContents headings={tocHeadings} mode="mobile" />}
+        <div class="article-body">
+          <Content />
+        </div>
+      </div>
+
+      {showToc && <TableOfContents headings={tocHeadings} mode="desktop" />}
     </div>
 
     <footer class="article-footer">
@@ -142,6 +162,10 @@ function formatDate(date: Date): string {
     </script>
   )}
 
+  <CodeBlockEnhancer />
+  <HeadingAnchors />
+  <BackToTop />
+  <ExternalLinks />
   <ImageLightbox />
 </BaseLayout>
 
@@ -149,6 +173,32 @@ function formatDate(date: Date): string {
   .article-page {
     padding-top: 1.5rem;
     padding-bottom: 5rem;
+    transition: max-width 0.2s ease;
+  }
+
+  /* Desktop two-column layout when TOC is present */
+  @media (min-width: 1024px) {
+    .article-page.has-toc {
+      max-width: 1040px;
+    }
+
+    .article-layout.has-toc {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 3rem;
+    }
+
+    .article-layout.has-toc .article-main {
+      flex: 1;
+      min-width: 0;
+      max-width: 720px;
+    }
+  }
+
+  .article-layout {
+    display: block;
+    position: relative;
   }
 
   .article-header {

@@ -49,9 +49,15 @@ graph LR
 
 ## Dialing Checklist
 
+When calibrating a high-extraction espresso recipe, consistency across mechanical variables is paramount. Microscopic fissures in the tamped puck lead to preferential water pathways where water rushes through under high pressure, simultaneously over-extracting bitter compounds along the channel and leaving surrounding grounds under-extracted and sour.
+
 - [x] Measure 18.0g whole beans on calibrated scale
 - [x] Distribute grounds evenly with 0.3mm needles
 - [ ] Record shot time and target 1:2 extraction ratio
+
+## Basket Geometry and Flow Resistance
+
+Precision filter baskets with laser-machined cylindrical apertures offer uniform hydraulic permeability across the entire surface area. Traditional conical baskets forced water toward a central apex, concentrating extraction and encouraging peripheral puck stagnation. Modern straight-walled competition baskets distribute fluid resistance uniformly across the bottom perimeter, allowing baristas to grind substantially finer while maintaining laminar percolation without excessive astringency or harsh fines migration.
 
 ## Callouts Showcase
 
@@ -61,7 +67,24 @@ graph LR
 > [!warning]- Collapsible Water Quality Notice (Starts Folded)
 > If total dissolved solids in brew water exceed 150 ppm, mineral scaling will accelerate and extraction yield will drop significantly.
 
-> [!danger] Safety Warning
-> Never loosen portafilter while group head pump is engaged under 9 bars of pressure.
+## Pressure Profiling Automation
+
+Modern saturated group head espresso machines utilize digital PID controllers and rotary gear pumps to dynamically regulate water flow during pre-infusion:
+
+```python
+def calculate_flow_profile(time_seconds: float, target_pressure_bar: float = 9.0) -> float:
+    """Calculates instantaneous pressure profile with gentle 5-second pre-infusion."""
+    if time_seconds < 5.0:
+        return 2.0 + (time_seconds / 5.0) * 1.5  # Soft ramp: 2.0 to 3.5 bar
+    elif time_seconds < 25.0:
+        return target_pressure_bar  # Stable 9.0 bar peak extraction
+    else:
+        # Declining tail to mitigate channeling as puck degrades
+        decay = (time_seconds - 25.0) / 10.0
+        return max(5.0, target_pressure_bar - decay * 4.0)
+```
+
+For advanced scientific research on extraction dynamics and sensory evaluation, visit the official [Specialty Coffee Association Research Portal](https://sca.coffee/).
 
 [^1]: Total Dissolved Solids (TDS) measures the concentration of soluble coffee flavor compounds in the beverage, typically ranging from 8% to 12% in espresso.
+
