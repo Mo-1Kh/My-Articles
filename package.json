@@ -13,7 +13,12 @@
     "@fontsource/fraunces": "^5.3.0",
     "@fontsource/jetbrains-mono": "^5.3.0",
     "@fontsource/source-serif-4": "^5.3.1",
-    "astro": "^5.4.2"
+    "astro": "^5.4.2",
+    "katex": "0.19.1",
+    "mermaid": "^11.17.2",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0",
+    "unist-util-visit": "^5.2.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",

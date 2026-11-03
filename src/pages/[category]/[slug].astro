@@ -1,27 +1,57 @@
 ---
-// [category]/[slug].astro - Article page renderer
+// [category]/[slug].astro - Full Article Page with Obsidian rendering per Section 9
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getArticles } from '../../lib/articles';
+import { getGroupedCategories, type Article } from '../../lib/articles';
 import { render } from 'astro:content';
 import { getPath } from '../../../site.config';
+import { calculateReadingTime } from '../../lib/reading-time';
 
 export async function getStaticPaths() {
-  const articles = await getArticles();
-  return articles.map((article) => ({
-    params: {
-      category: article.categorySlug,
-      slug: article.slug,
-    },
-    props: { article },
-  }));
+  const categories = await getGroupedCategories();
+  const paths = [];
+
+  for (const cat of categories) {
+    // cat.articles are already sorted oldest to newest per Section 7
+    for (let i = 0; i < cat.articles.length; i++) {
+      const article = cat.articles[i];
+      const prev = i > 0 ? cat.articles[i - 1] : null;
+      const next = i < cat.articles.length - 1 ? cat.articles[i + 1] : null;
+
+      paths.push({
+        params: {
+          category: article.categorySlug,
+          slug: article.slug,
+        },
+        props: {
+          article,
+          prevArticle: prev ? { title: prev.title, url: prev.url } : null,
+          nextArticle: next ? { title: next.title, url: next.url } : null,
+        },
+      });
+    }
+  }
+
+  return paths;
 }
 
 interface Props {
-  article: Awaited<ReturnType<typeof getArticles>>[number];
+  article: Article;
+  prevArticle: { title: string; url: string } | null;
+  nextArticle: { title: string; url: string } | null;
 }
 
-const { article } = Astro.props;
+const { article, prevArticle, nextArticle } = Astro.props;
 const { Content } = await render(article.entry);
+
+const readingTime = calculateReadingTime(article.rawBody);
+
+// Detect if math or mermaid diagrams are present to conditionally load dependencies
+const hasMath = /\$|\\\(|\\\[/.test(article.rawBody);
+const hasMermaid = /```mermaid\b/.test(article.rawBody);
+
+const katexCssUrl = getPath('/vendor/katex/katex.min.css');
+const mermaidJsUrl = getPath('/vendor/mermaid/mermaid.esm.min.mjs');
+const homeUrl = getPath('/');
 
 function formatDate(date: Date): string {
   const y = date.getUTCFullYear();
@@ -32,19 +62,26 @@ function formatDate(date: Date): string {
 ---
 
 <BaseLayout title={article.title} description={article.description}>
-  <article class="container article-container">
+  {hasMath && <link rel="stylesheet" href={katexCssUrl} />}
+
+  <article class="container article-page">
     <header class="article-header">
       <div class="article-meta">
         <span class="meta-category">{article.category}</span>
-        <span class="meta-sep">/</span>
+        <span class="meta-sep">&bull;</span>
         <time datetime={article.publishedDate.toISOString()} class="meta-date">
           {formatDate(article.publishedDate)}
         </time>
         {article.modifiedDate && (
-          <span class="meta-modified">
-            · Modified {formatDate(article.modifiedDate)}
-          </span>
+          <>
+            <span class="meta-sep">&bull;</span>
+            <span class="meta-modified">
+              Modified <time datetime={article.modifiedDate.toISOString()}>{formatDate(article.modifiedDate)}</time>
+            </span>
+          </>
         )}
+        <span class="meta-sep">&bull;</span>
+        <span class="meta-reading-time">{readingTime}</span>
       </div>
 
       <h1 class="article-title">{article.title}</h1>
@@ -55,81 +92,338 @@ function formatDate(date: Date): string {
     </div>
 
     <footer class="article-footer">
-      <hr />
-      <a href={getPath('/')} class="back-link">&larr; Back to all articles</a>
+      <!-- Previous / Next Navigation within Category -->
+      {(prevArticle || nextArticle) && (
+        <nav class="article-pagination" aria-label="Article navigation within category">
+          {prevArticle ? (
+            <a href={prevArticle.url} class="pagination-link prev" rel="prev">
+              <span class="pagination-sub">&larr; Previous</span>
+              <span class="pagination-title">{prevArticle.title}</span>
+            </a>
+          ) : (
+            <div class="pagination-empty" />
+          )}
+
+          {nextArticle ? (
+            <a href={nextArticle.url} class="pagination-link next" rel="next">
+              <span class="pagination-sub">Next &rarr;</span>
+              <span class="pagination-title">{nextArticle.title}</span>
+            </a>
+          ) : (
+            <div class="pagination-empty" />
+          )}
+        </nav>
+      )}
+
+      <div class="home-return">
+        <a href={homeUrl} class="back-home-link">&larr; Back to all articles</a>
+      </div>
+
+      <!-- Comments Slot (Prepared for Phase 9) -->
+      <section id="comments" class="comments-section" />
     </footer>
   </article>
+
+  {hasMermaid && (
+    <script type="module" define:vars={{ mermaidJsUrl }}>
+      import mermaid from mermaidJsUrl;
+      function initMermaid() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'espresso';
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: isDark ? 'dark' : 'neutral',
+          fontFamily: 'inherit',
+        });
+        mermaid.run({ querySelector: 'pre.mermaid' });
+      }
+      initMermaid();
+      window.addEventListener('theme-change', initMermaid);
+    </script>
+  )}
 </BaseLayout>
 
 <style>
-  .article-container {
+  .article-page {
     padding-top: 1.5rem;
-    padding-bottom: 4rem;
+    padding-bottom: 5rem;
   }
 
   .article-header {
-    margin-bottom: 2.5rem;
-    padding-bottom: 1.5rem;
+    margin-bottom: 2.75rem;
+    padding-bottom: 1.75rem;
     border-bottom: 1px solid var(--border-muted);
   }
 
   .article-meta {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
     font-family: var(--font-code);
     font-size: 0.85rem;
     color: var(--text-muted);
-    margin-bottom: 0.75rem;
+    margin-bottom: 1rem;
   }
 
   .meta-category {
     color: var(--accent);
-    font-weight: 500;
+    font-weight: 600;
   }
 
   .meta-sep {
     color: var(--border);
+    opacity: 0.8;
   }
 
   .article-title {
     margin: 0;
-    font-size: 2.25rem;
+    font-size: 2.35rem;
     line-height: 1.25;
+    letter-spacing: -0.015em;
   }
 
   .article-body {
     line-height: var(--line-height-base, 1.75);
+    font-size: 1.05rem;
   }
 
-  .article-body :global(h2) {
-    margin-top: 2rem;
-    margin-bottom: 0.75rem;
+  /* Obsidian Wikilinks */
+  .article-body :global(.wikilink) {
+    color: var(--link);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font-weight: 500;
   }
 
-  .article-body :global(p) {
-    margin-bottom: 1.25rem;
+  .article-body :global(.wikilink:hover) {
+    color: var(--link-hover);
   }
 
-  .article-body :global(ul),
-  .article-body :global(ol) {
-    margin-bottom: 1.25rem;
+  .article-body :global(.wikilink-broken) {
+    color: var(--text-muted);
+    border-bottom: 1px dashed var(--border);
+    cursor: help;
   }
 
-  .article-footer {
-    margin-top: 3.5rem;
-  }
-
-  .back-link {
+  /* Obsidian Tags */
+  .article-body :global(.tag) {
     display: inline-block;
-    margin-top: 1rem;
+    font-family: var(--font-code);
+    font-size: 0.85em;
+    color: var(--text-muted);
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    padding: 0.1em 0.5em;
+    border-radius: 4px;
+    margin: 0 0.2em;
+    vertical-align: baseline;
+  }
+
+  /* Callouts styling & foldable chevrons */
+  .article-body :global(.callout) {
+    margin: 1.75em 0;
+    padding: 1rem 1.25rem;
+    border-left: 4px solid var(--border);
+    background-color: var(--surface);
+    border-radius: 4px;
+  }
+
+  .article-body :global(details.callout) {
+    padding: 0;
+  }
+
+  .article-body :global(details.callout summary.callout-title) {
+    cursor: pointer;
+    list-style: none;
+    padding: 1rem 1.25rem;
+    user-select: none;
+  }
+
+  .article-body :global(details.callout summary.callout-title::-webkit-details-marker) {
+    display: none;
+  }
+
+  .article-body :global(details.callout .callout-content) {
+    padding: 0 1.25rem 1rem 1.25rem;
+  }
+
+  .article-body :global(.callout-title) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .article-body :global(.callout-fold-indicator) {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    transition: transform 0.2s ease;
+  }
+
+  .article-body :global(details.callout[open] .callout-fold-indicator) {
+    transform: rotate(180deg);
+  }
+
+  /* Callout themes */
+  .article-body :global(.callout[data-callout="note"]),
+  .article-body :global(.callout[data-callout="info"]) {
+    border-left-color: var(--callout-note-border);
+    background-color: var(--callout-note-bg);
+  }
+  .article-body :global(.callout[data-callout="note"] .callout-title),
+  .article-body :global(.callout[data-callout="info"] .callout-title) {
+    color: var(--callout-note-border);
+  }
+
+  .article-body :global(.callout[data-callout="tip"]),
+  .article-body :global(.callout[data-callout="hint"]) {
+    border-left-color: var(--callout-tip-border);
+    background-color: var(--callout-tip-bg);
+  }
+  .article-body :global(.callout[data-callout="tip"] .callout-title),
+  .article-body :global(.callout[data-callout="hint"] .callout-title) {
+    color: var(--callout-tip-border);
+  }
+
+  .article-body :global(.callout[data-callout="warning"]),
+  .article-body :global(.callout[data-callout="caution"]) {
+    border-left-color: var(--callout-warning-border);
+    background-color: var(--callout-warning-bg);
+  }
+  .article-body :global(.callout[data-callout="warning"] .callout-title),
+  .article-body :global(.callout[data-callout="caution"] .callout-title) {
+    color: var(--callout-warning-border);
+  }
+
+  .article-body :global(.callout[data-callout="danger"]),
+  .article-body :global(.callout[data-callout="error"]) {
+    border-left-color: var(--callout-danger-border);
+    background-color: var(--callout-danger-bg);
+  }
+  .article-body :global(.callout[data-callout="danger"] .callout-title),
+  .article-body :global(.callout[data-callout="error"] .callout-title) {
+    color: var(--callout-danger-border);
+  }
+
+  /* Task lists */
+  .article-body :global(ul.contains-task-list),
+  .article-body :global(ul:has(input[type="checkbox"])) {
+    list-style: none;
+    padding-left: 0.5rem;
+  }
+
+  .article-body :global(li.task-list-item),
+  .article-body :global(li:has(input[type="checkbox"])) {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .article-body :global(input[type="checkbox"]) {
+    accent-color: var(--accent);
+    cursor: default;
+  }
+
+  /* Footnotes */
+  .article-body :global(.footnotes) {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-muted);
+    font-size: 0.9em;
+    color: var(--text-muted);
+  }
+
+  /* Mermaid Diagram */
+  .article-body :global(pre.mermaid) {
+    background: transparent;
+    border: none;
+    display: flex;
+    justify-content: center;
+    padding: 1.5rem 0;
+  }
+
+  /* Article Footer & Pagination */
+  .article-footer {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-muted);
+  }
+
+  .article-pagination {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .pagination-link {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 1.25rem;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    text-decoration: none;
+    transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.1s ease;
+  }
+
+  .pagination-link:hover {
+    border-color: var(--accent);
+    background-color: var(--bg);
+    transform: translateY(-1px);
+  }
+
+  .pagination-link.next {
+    text-align: right;
+  }
+
+  .pagination-sub {
+    font-family: var(--font-code);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+  }
+
+  .pagination-title {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .pagination-empty {
+    visibility: hidden;
+  }
+
+  .home-return {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .back-home-link {
     color: var(--link);
     text-decoration: none;
     font-weight: 500;
   }
 
-  .back-link:hover {
+  .back-home-link:hover {
     color: var(--link-hover);
     text-decoration: underline;
+  }
+
+  @media (max-width: 600px) {
+    .article-pagination {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .pagination-link.next {
+      text-align: left;
+    }
   }
 </style>

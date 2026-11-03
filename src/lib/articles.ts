@@ -3,6 +3,8 @@ import { getPath } from '../../site.config';
 import fs from 'node:fs';
 import path from 'node:path';
 import { resolveArticleDates } from './git-dates';
+import { slugify } from './slug.js';
+export { slugify };
 
 export interface Article {
   id: string;
@@ -24,18 +26,6 @@ export interface CategoryGroup {
   slug: string;
   articles: Article[];
   oldestDate: Date;
-}
-
-/**
- * Converts a string into a URL-friendly slug.
- */
-export function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
 }
 
 /**
