@@ -1,0 +1,135 @@
+---
+// [category]/[slug].astro - Article page renderer
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getArticles } from '../../lib/articles';
+import { render } from 'astro:content';
+import { getPath } from '../../../site.config';
+
+export async function getStaticPaths() {
+  const articles = await getArticles();
+  return articles.map((article) => ({
+    params: {
+      category: article.categorySlug,
+      slug: article.slug,
+    },
+    props: { article },
+  }));
+}
+
+interface Props {
+  article: Awaited<ReturnType<typeof getArticles>>[number];
+}
+
+const { article } = Astro.props;
+const { Content } = await render(article.entry);
+
+function formatDate(date: Date): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+---
+
+<BaseLayout title={article.title} description={article.description}>
+  <article class="container article-container">
+    <header class="article-header">
+      <div class="article-meta">
+        <span class="meta-category">{article.category}</span>
+        <span class="meta-sep">/</span>
+        <time datetime={article.publishedDate.toISOString()} class="meta-date">
+          {formatDate(article.publishedDate)}
+        </time>
+        {article.modifiedDate && (
+          <span class="meta-modified">
+            · Modified {formatDate(article.modifiedDate)}
+          </span>
+        )}
+      </div>
+
+      <h1 class="article-title">{article.title}</h1>
+    </header>
+
+    <div class="article-body">
+      <Content />
+    </div>
+
+    <footer class="article-footer">
+      <hr />
+      <a href={getPath('/')} class="back-link">&larr; Back to all articles</a>
+    </footer>
+  </article>
+</BaseLayout>
+
+<style>
+  .article-container {
+    padding-top: 1.5rem;
+    padding-bottom: 4rem;
+  }
+
+  .article-header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-muted);
+  }
+
+  .article-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-code);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+  }
+
+  .meta-category {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .meta-sep {
+    color: var(--border);
+  }
+
+  .article-title {
+    margin: 0;
+    font-size: 2.25rem;
+    line-height: 1.25;
+  }
+
+  .article-body {
+    line-height: var(--line-height-base, 1.75);
+  }
+
+  .article-body :global(h2) {
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .article-body :global(p) {
+    margin-bottom: 1.25rem;
+  }
+
+  .article-body :global(ul),
+  .article-body :global(ol) {
+    margin-bottom: 1.25rem;
+  }
+
+  .article-footer {
+    margin-top: 3.5rem;
+  }
+
+  .back-link {
+    display: inline-block;
+    margin-top: 1rem;
+    color: var(--link);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .back-link:hover {
+    color: var(--link-hover);
+    text-decoration: underline;
+  }
+</style>

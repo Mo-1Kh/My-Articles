@@ -125,7 +125,14 @@ export function getSiteOrigin(): string {
 /**
  * Returns the base path prefix.
  */
+declare const process: any;
+
 export function getBasePath(): string {
+  // During local development (astro dev), serve at root for clean localhost:4321 URLs
+  // unless explicitly forced via SUBPATH=true
+  if (typeof process !== "undefined" && process?.env?.NODE_ENV !== "production" && !process?.env?.SUBPATH) {
+    return "";
+  }
   if (siteConfig.customDomain && siteConfig.customDomain.trim() !== "") {
     return "";
   }

@@ -1,51 +1,172 @@
 ---
-// index.astro - Initial placeholder for Phase 1
+// index.astro - Home Page listing all articles grouped by category per Section 7
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { siteConfig, getPath } from '../../site.config';
+import { getGroupedCategories } from '../lib/articles';
+import { siteConfig } from '../../site.config';
 
-const styleGuideUrl = getPath('/style-guide/');
+const categoryGroups = await getGroupedCategories();
+
+function formatDate(date: Date): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
 ---
 
 <BaseLayout title={siteConfig.name} description={siteConfig.description}>
-  <div class="container home-placeholder">
-    <h1>{siteConfig.name}</h1>
-    <p class="subtitle">{siteConfig.description}</p>
+  <div class="container home-container">
+    <header class="home-header">
+      <h1 class="home-title">{siteConfig.name}</h1>
+      <p class="home-desc">{siteConfig.description}</p>
+    </header>
 
-    <div class="phase-notice">
-      <h2>Phase 1 Foundation Ready</h2>
-      <p>
-        The Astro scaffold, warm coffee theme system (Latte & Espresso), self-hosted typography (Fraunces, Source Serif 4, JetBrains Mono), and zero-flash theme switcher are now configured.
-      </p>
-      <p>
-        Visit the <a href={styleGuideUrl}><strong>Design & Typography Style Guide</strong></a> to evaluate all font weights, callouts, and contrast ratios.
-      </p>
+    <div class="categories-list">
+      {categoryGroups.map((group) => (
+        <section class="category-section" id={`category-${group.slug}`}>
+          <div class="category-header">
+            <h2 class="category-title">
+              {group.name}
+              <span class="category-count">({group.articles.length})</span>
+            </h2>
+          </div>
+
+          <ul class="article-list">
+            {group.articles.map((article) => (
+              <li class="article-item">
+                <a href={article.url} class="article-link">
+                  <span class="article-title">{article.title}</span>
+                </a>
+                <time datetime={article.publishedDate.toISOString()} class="article-date">
+                  {formatDate(article.publishedDate)}
+                </time>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+
+      {categoryGroups.length === 0 && (
+        <p class="empty-state">No articles published yet.</p>
+      )}
     </div>
   </div>
 </BaseLayout>
 
 <style>
-  .home-placeholder {
-    padding-top: 2rem;
+  .home-container {
+    padding-top: 1rem;
+    padding-bottom: 3rem;
   }
 
-  .subtitle {
-    font-size: 1.2rem;
-    color: var(--text-muted);
-    margin-bottom: 2rem;
+  .home-header {
+    margin-bottom: 2.75rem;
   }
 
-  .phase-notice {
-    padding: 1.5rem;
-    background-color: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    margin-top: 1.5rem;
-  }
-
-  .phase-notice h2 {
+  .home-title {
     margin-top: 0;
-    font-size: 1.35rem;
-    border-bottom: none;
-    padding-bottom: 0;
+    margin-bottom: 0.5rem;
+    font-size: 2.35rem;
+    letter-spacing: -0.02em;
+  }
+
+  .home-desc {
+    color: var(--text-muted);
+    font-size: 1.15rem;
+    line-height: 1.6;
+    margin-bottom: 0;
+  }
+
+  .categories-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+  }
+
+  .category-section {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .category-header {
+    margin-bottom: 1rem;
+  }
+
+  .category-title {
+    font-size: 1.5rem;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-muted);
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .category-count {
+    font-family: var(--font-code);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+
+  .article-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .article-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 0;
+  }
+
+  .article-link {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.15s ease;
+  }
+
+  .article-link:hover {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .article-title {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+  }
+
+  .article-date {
+    font-family: var(--font-code);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .empty-state {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  @media (max-width: 540px) {
+    .article-item {
+      flex-direction: column;
+      gap: 0.25rem;
+      align-items: flex-start;
+    }
+
+    .article-date {
+      font-size: 0.8rem;
+    }
   }
 </style>
