@@ -6,6 +6,7 @@
     "dev": "astro dev",
     "build": "astro check && astro build",
     "preview": "astro preview",
+    "test:dates": "node scripts/test-git-dates.mjs",
     "astro": "astro"
   },
   "dependencies": {
@@ -16,6 +17,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
+    "@types/node": "^22.13.4",
     "typescript": "^5.7.3"
   }
 }

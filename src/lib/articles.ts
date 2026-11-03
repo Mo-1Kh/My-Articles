@@ -1,5 +1,8 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { getPath } from '../../site.config';
+import fs from 'node:fs';
+import path from 'node:path';
+import { resolveArticleDates } from './git-dates';
 
 export interface Article {
   id: string;
@@ -135,15 +138,25 @@ export async function getArticles(): Promise<Article[]> {
     const fallbackSlug = entry.id.split('/').pop()?.replace(/\.md$/i, '') || entry.id;
     const finalSlug = slugify(entry.data?.slug || fallbackSlug);
 
-    // Published date: in Phase 2, use frontmatter date or a deterministic fallback
-    // (In Phase 3, this will be fully replaced with Git commit history)
-    const publishedDate = entry.data?.published
-      ? new Date(entry.data.published)
-      : new Date('2024-01-01T00:00:00Z');
+    // Resolve real Git dates with caching, overrides, minor exemption, and future-dated suppression
+    let resolvedFilePath = path.join(process.cwd(), 'content', entry.id);
+    if (!fs.existsSync(resolvedFilePath) && fs.existsSync(`${resolvedFilePath}.md`)) {
+      resolvedFilePath = `${resolvedFilePath}.md`;
+    }
 
-    const modifiedDate = entry.data?.modified
-      ? new Date(entry.data.modified)
-      : undefined;
+    const dates = resolveArticleDates(resolvedFilePath, {
+      published: entry.data?.published,
+      modified: entry.data?.modified,
+      minor: entry.data?.minor,
+    });
+
+    // Section 6: Future-dated hiding
+    if (dates.isFuture) {
+      continue;
+    }
+
+    const publishedDate = dates.published;
+    const modifiedDate = dates.modified;
 
     const url = getPath(`/${categorySlug}/${finalSlug}/`);
 
