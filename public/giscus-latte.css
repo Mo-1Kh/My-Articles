@@ -1,0 +1,51 @@
+/* public/giscus-latte.css */
+/* Custom Giscus Coffee Palette: Latte (Light Brown #CFAD85) */
+main {
+  --color-prettylights-syntax-comment: #6E553F;
+  --color-prettylights-syntax-constant: #8B3A0D;
+  --color-prettylights-syntax-entity: #5B2E0E;
+  --color-prettylights-syntax-storage-modifier-import: #211409;
+  --color-prettylights-syntax-entity-tag: #7A2906;
+  --color-prettylights-syntax-keyword: #7A2906;
+  --color-prettylights-syntax-string: #3D531F;
+  --color-prettylights-syntax-variable: #683515;
+
+  --color-btn-text: #211409;
+  --color-btn-bg: #DFC7A9;
+  --color-btn-border: #B8946C;
+  --color-btn-hover-bg: #D4B999;
+  --color-btn-hover-border: #9C754E;
+  --color-btn-primary-text: #F4EBE1;
+  --color-btn-primary-bg: #5C2E0B;
+  --color-btn-primary-border: #4A2307;
+  --color-btn-primary-hover-bg: #442006;
+  --color-btn-primary-hover-border: #331603;
+
+  --color-fg-default: #211409;
+  --color-fg-muted: #543B25;
+  --color-fg-subtle: #75553C;
+  --color-canvas-default: #CFAD85;
+  --color-canvas-overlay: #DFC7A9;
+  --color-canvas-inset: #C39D71;
+  --color-canvas-subtle: #DEC4A3;
+
+  --color-border-default: #B8946C;
+  --color-border-muted: #C5A37B;
+  --color-neutral-muted: rgba(62, 35, 16, 0.15);
+  --color-accent-fg: #5C2E0B;
+  --color-accent-emphasis: #5C2E0B;
+  --color-accent-muted: rgba(92, 46, 11, 0.2);
+  --color-accent-subtle: rgba(92, 46, 11, 0.1);
+
+  --color-primer-shadow-focus: 0 0 0 3px rgba(92, 46, 11, 0.35);
+
+  color-scheme: light;
+}
+
+/*! Ensure smooth font integration */
+main, body {
+  font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+}
+code, pre {
+  font-family: 'JetBrains Mono', Courier, monospace;
+}

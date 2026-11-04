@@ -1,0 +1,230 @@
+---
+// src/components/Comments.astro
+// Lazy-loaded Giscus comments integration per Section 11
+import { siteConfig, getSiteOrigin, getPath } from '../../site.config';
+
+export interface Props {
+  articleCommentsEnabled?: boolean;
+}
+
+const { articleCommentsEnabled = true } = Astro.props;
+
+const {
+  enabled,
+  repo,
+  repoId,
+  category,
+  categoryId,
+  mapping = 'pathname',
+  reactionsEnabled = true,
+  emitMetadata = false,
+} = siteConfig.comments;
+
+// Section 11: Disabled or empty IDs render nothing and never fail the build
+const isConfigured = enabled && Boolean(repoId) && Boolean(categoryId);
+const shouldRender = isConfigured && articleCommentsEnabled;
+
+const siteOrigin = getSiteOrigin();
+const latteThemeUrl = `${siteOrigin}${getPath('/giscus-latte.css')}`;
+const espressoThemeUrl = `${siteOrigin}${getPath('/giscus-espresso.css')}`;
+---
+
+{shouldRender && (
+  <section id="comments" class="comments-section" aria-label="Article Comments">
+    <div class="comments-header">
+      <h2 class="comments-title">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="comments-icon">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+        Comments
+      </h2>
+      <p class="comments-description">
+        Discussions are hosted on GitHub Discussions. Sign in with GitHub to participate.
+      </p>
+    </div>
+
+    <div
+      id="giscus-container"
+      class="giscus-container"
+      data-repo={repo}
+      data-repo-id={repoId}
+      data-category={category}
+      data-category-id={categoryId}
+      data-mapping={mapping}
+      data-reactions-enabled={reactionsEnabled ? '1' : '0'}
+      data-emit-metadata={emitMetadata ? '1' : '0'}
+      data-theme-latte={latteThemeUrl}
+      data-theme-espresso={espressoThemeUrl}
+    >
+      <div id="comments-loading" class="comments-loading">
+        <span class="loading-spinner" aria-hidden="true"></span>
+        <span>Loading discussion...</span>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    function setupGiscus() {
+      const container = document.getElementById('giscus-container');
+      if (!container) return;
+
+      const loadingEl = document.getElementById('comments-loading');
+
+      const repo = container.dataset.repo;
+      const repoId = container.dataset.repoId;
+      const category = container.dataset.category;
+      const categoryId = container.dataset.categoryId;
+      const mapping = container.dataset.mapping || 'pathname';
+      const reactions = container.dataset.reactionsEnabled || '1';
+      const emitMetadata = container.dataset.emitMetadata || '0';
+      const latteTheme = container.dataset.themeLatte || 'light';
+      const espressoTheme = container.dataset.themeEspresso || 'dark_dimmed';
+
+      function getCurrentTheme(): string {
+        const themeAttr = document.documentElement.getAttribute('data-theme');
+        if (themeAttr === 'espresso') return espressoTheme;
+        if (themeAttr === 'latte') return latteTheme;
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          return espressoTheme;
+        }
+        return latteTheme;
+      }
+
+      let scriptLoaded = false;
+
+      function loadGiscusScript() {
+        if (scriptLoaded || !container) return;
+        scriptLoaded = true;
+
+        const script = document.createElement('script');
+        script.src = 'https://giscus.app/client.js';
+        script.async = true;
+        script.crossOrigin = 'anonymous';
+
+        script.setAttribute('data-repo', repo || '');
+        script.setAttribute('data-repo-id', repoId || '');
+        script.setAttribute('data-category', category || '');
+        script.setAttribute('data-category-id', categoryId || '');
+        script.setAttribute('data-mapping', mapping);
+        script.setAttribute('data-strict', '0');
+        script.setAttribute('data-reactions-enabled', reactions);
+        script.setAttribute('data-emit-metadata', emitMetadata);
+        script.setAttribute('data-input-position', 'top');
+        script.setAttribute('data-theme', getCurrentTheme());
+        script.setAttribute('data-lang', 'en');
+        script.setAttribute('data-loading', 'lazy');
+
+        script.onload = () => {
+          // Hide loading spinner once iframe is mounted
+          setTimeout(() => {
+            if (loadingEl) loadingEl.style.display = 'none';
+          }, 800);
+        };
+
+        container.appendChild(script);
+      }
+
+      // Section 11: Lazy-load with IntersectionObserver
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                observer.disconnect();
+                loadGiscusScript();
+              }
+            });
+          },
+          { rootMargin: '300px 0px' }
+        );
+
+        observer.observe(container);
+      } else {
+        // Fallback for browsers without IntersectionObserver
+        loadGiscusScript();
+      }
+
+      // Section 11: Sync Giscus theme with site toggle via postMessage
+      window.addEventListener('theme-change', (e: Event) => {
+        const customEvent = e as CustomEvent<{ theme: string }>;
+        const newThemeName = customEvent.detail?.theme;
+        const targetTheme = newThemeName === 'espresso' ? espressoTheme : latteTheme;
+
+        const iframe = document.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage(
+            { giscus: { setConfig: { theme: targetTheme } } },
+            'https://giscus.app'
+          );
+        }
+      });
+    }
+
+    setupGiscus();
+    document.addEventListener('astro:after-swap', setupGiscus);
+  </script>
+)}
+
+<style>
+  .comments-section {
+    margin-top: 3.5rem;
+    padding-top: 2.5rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .comments-header {
+    margin-bottom: 2rem;
+  }
+
+  .comments-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 1.5rem;
+    margin-top: 0;
+    margin-bottom: 0.4rem;
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .comments-icon {
+    color: var(--accent);
+  }
+
+  .comments-description {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 0;
+  }
+
+  .giscus-container {
+    min-height: 140px;
+    position: relative;
+  }
+
+  .comments-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 2.5rem 1rem;
+    color: var(--text-muted);
+    font-family: var(--font-code);
+    font-size: 0.9rem;
+  }
+
+  .loading-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>

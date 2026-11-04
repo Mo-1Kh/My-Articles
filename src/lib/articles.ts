@@ -21,6 +21,7 @@ export interface Article {
   url: string;
   cover?: string;
   tags: string[];
+  comments?: boolean;
   entry: CollectionEntry<'articles'>;
 }
 
@@ -186,6 +187,7 @@ export async function getArticles(): Promise<Article[]> {
       url,
       cover: entry.data?.cover,
       tags,
+      comments: entry.data?.comments !== false,
       entry,
     });
   }
