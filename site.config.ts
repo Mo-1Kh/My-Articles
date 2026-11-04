@@ -55,7 +55,7 @@ export interface SiteConfig {
 
 export const siteConfig: SiteConfig = {
   name: "Mo's Articles",
-  author: "Mohamed",
+  author: "Mohamed khairy",
   description: "Personal articles, technical writings, and reflections.",
   githubUser: "Mo-1Kh",
   repoName: "My-Articles",
@@ -94,12 +94,12 @@ export const siteConfig: SiteConfig = {
     },
   },
   comments: {
-    enabled: false,
+    enabled: true,
     provider: "giscus",
     repo: "Mo-1Kh/My-Articles",
-    repoId: "",
+    repoId: "R_kgDOVh2KMg",
     category: "Announcements",
-    categoryId: "",
+    categoryId: "DIC_kwDOVh2KMs4DKWTg",
     mapping: "pathname",
     reactionsEnabled: true,
     emitMetadata: false,

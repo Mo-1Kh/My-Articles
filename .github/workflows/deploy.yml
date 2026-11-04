@@ -1,0 +1,76 @@
+name: Deploy Mo's Articles to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    # Daily automated build at 06:00 UTC to publish future-dated scheduled articles
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+# Allow one concurrent deployment
+concurrency:
+  group: 'pages'
+  cancel-in-progress: false
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build & Validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          # CRITICAL: fetch-depth 0 fetches all Git history required to determine accurate
+          # published and modified dates from git log per Section 6
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Verification Test Suites
+        run: |
+          pnpm run test:dates
+          pnpm run test:seo
+          pnpm run test:writer
+          pnpm run test:comments
+
+      - name: Build Static Site
+        run: pnpm run build
+        env:
+          NODE_ENV: production
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
