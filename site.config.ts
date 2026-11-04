@@ -62,10 +62,10 @@ export interface SiteConfig {
 export const siteConfig: SiteConfig = {
   name: "Mo's Articles",
   tagline: "Software Engineering & technical Writing",
-  header: "A place for me",
+  header: "A place just for me",
   author: "Mohamed Khairy",
   description:
-    "to share what I learned.",
+    "",
   githubUser: "Mo-1Kh",
   repoName: "My-Articles",
   isSubpathDeploy: true,

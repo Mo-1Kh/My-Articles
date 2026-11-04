@@ -39,12 +39,13 @@ function wrapText(text: string, maxCharsPerLine: number = 32): string[] {
 export async function generateOgImage(options: OgImageOptions): Promise<Buffer> {
   const {
     title,
-    category = 'Article',
+    category,
     siteName = "Mo's Articles",
-    author = 'Mohamed',
+    author = 'Mohamed Khairy',
   } = options;
 
-  const escapedCategory = escapeXml(category.toUpperCase());
+  const hasCategory = Boolean(category && category.trim().length > 0);
+  const escapedCategory = hasCategory ? escapeXml(category!.trim().toUpperCase()) : '';
   const escapedSiteName = escapeXml(siteName);
   const escapedAuthor = escapeXml(author);
 
@@ -97,11 +98,15 @@ export async function generateOgImage(options: OgImageOptions): Promise<Buffer> 
   <circle cx="52" cy="578" r="3" fill="#E2B170" fill-opacity="0.8" />
   <circle cx="1148" cy="578" r="3" fill="#E2B170" fill-opacity="0.8" />
 
-  <!-- Category Badge Pill -->
+  ${
+    hasCategory
+      ? `<!-- Category Badge Pill -->
   <g transform="translate(100, 110)">
     <rect width="${Math.max(140, escapedCategory.length * 11.5 + 44)}" height="40" rx="8" fill="#23262E" stroke="#E2B170" stroke-width="1.5" />
     <text x="${(Math.max(140, escapedCategory.length * 11.5 + 44)) / 2}" y="25" font-family="'JetBrains Mono', Courier, monospace" font-size="14" font-weight="600" fill="#E2B170" text-anchor="middle" letter-spacing="0.1em">${escapedCategory}</text>
-  </g>
+  </g>`
+      : ''
+  }
 
   <!-- Article Title (Multi-line) -->
   ${titleSpans}
