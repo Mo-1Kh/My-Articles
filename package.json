@@ -7,9 +7,11 @@
     "build": "astro check && astro build",
     "preview": "astro preview",
     "test:dates": "node scripts/test-git-dates.mjs",
+    "test:seo": "node scripts/test-seo.mjs",
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/rss": "^4.0.19",
     "@fontsource/fraunces": "^5.3.0",
     "@fontsource/jetbrains-mono": "^5.3.0",
     "@fontsource/source-serif-4": "^5.3.1",
@@ -23,7 +25,11 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
+    "@types/markdown-it": "^14.2.0",
     "@types/node": "^22.13.4",
+    "@types/sanitize-html": "^2.16.2",
+    "markdown-it": "^15.0.3",
+    "sanitize-html": "^2.18.1",
     "typescript": "^5.7.3"
   }
 }

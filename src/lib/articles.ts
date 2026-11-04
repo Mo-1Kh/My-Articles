@@ -18,6 +18,8 @@ export interface Article {
   draft: boolean;
   rawBody: string;
   url: string;
+  cover?: string;
+  tags: string[];
   entry: CollectionEntry<'articles'>;
 }
 
@@ -150,6 +152,11 @@ export async function getArticles(): Promise<Article[]> {
 
     const url = getPath(`/${categorySlug}/${finalSlug}/`);
 
+    // Extract tags from frontmatter or inline #tags (excluding markdown headings)
+    const frontmatterTags = Array.isArray(entry.data?.tags) ? entry.data.tags : [];
+    const inlineTagMatches = [...rawBody.matchAll(/(?:^|\s)#([a-zA-Z0-9_-]+)(?=\s|$)/g)].map((m) => m[1]);
+    const tags = Array.from(new Set([...frontmatterTags, ...inlineTagMatches]));
+
     validArticles.push({
       id: entry.id,
       slug: finalSlug,
@@ -162,6 +169,8 @@ export async function getArticles(): Promise<Article[]> {
       draft: entry.data?.draft === true,
       rawBody,
       url,
+      cover: entry.data?.cover,
+      tags,
       entry,
     });
   }

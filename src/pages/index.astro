@@ -2,9 +2,10 @@
 // index.astro - Home Page listing all articles grouped by category per Section 7
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getGroupedCategories } from '../lib/articles';
-import { siteConfig } from '../../site.config';
+import { siteConfig, getCanonicalUrl } from '../../site.config';
 
 const categoryGroups = await getGroupedCategories();
+const canonicalUrl = getCanonicalUrl('/');
 
 function formatDate(date: Date): string {
   const y = date.getUTCFullYear();
@@ -14,7 +15,12 @@ function formatDate(date: Date): string {
 }
 ---
 
-<BaseLayout title={siteConfig.name} description={siteConfig.description}>
+<BaseLayout
+  title={siteConfig.name}
+  description={siteConfig.description}
+  canonicalUrl={canonicalUrl}
+  ogType="website"
+>
   <div class="container home-container">
     <header class="home-header">
       <h1 class="home-title">{siteConfig.name}</h1>

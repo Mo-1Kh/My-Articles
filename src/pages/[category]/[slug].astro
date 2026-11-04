@@ -3,8 +3,9 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getGroupedCategories, type Article } from '../../lib/articles';
 import { render } from 'astro:content';
-import { getPath } from '../../../site.config';
+import { getPath, getCanonicalUrl } from '../../../site.config';
 import { calculateReadingTime, countWords } from '../../lib/reading-time';
+import { generateExcerpt } from '../../lib/excerpt';
 import ImageLightbox from '../../components/ImageLightbox.astro';
 import ReadingProgressBar from '../../components/ReadingProgressBar.astro';
 import TableOfContents from '../../components/TableOfContents.astro';
@@ -58,6 +59,14 @@ const tocHeadings = headings.filter(
 // Section 10: Hidden on short articles (fewer than 3 headings or fewer than 400 words)
 const showToc = tocHeadings.length >= 3 && wordCount >= 400;
 
+// Section 10: Fall back to auto-excerpt (~155 chars) if description not in frontmatter
+const metaDescription = article.description && article.description.trim() !== ''
+  ? article.description
+  : generateExcerpt(article.rawBody);
+
+const canonicalUrl = getCanonicalUrl(`/${article.categorySlug}/${article.slug}/`);
+const ogImageUrl = article.cover || `/og/${article.categorySlug}/${article.slug}.png`;
+
 // Detect if math or mermaid diagrams are present to conditionally load dependencies
 const hasMath = /\$|\\\(|\\\[/.test(article.rawBody);
 const hasMermaid = /```mermaid\b/.test(article.rawBody);
@@ -74,7 +83,17 @@ function formatDate(date: Date): string {
 }
 ---
 
-<BaseLayout title={article.title} description={article.description}>
+<BaseLayout
+  title={article.title}
+  description={metaDescription}
+  canonicalUrl={canonicalUrl}
+  ogType="article"
+  ogImage={ogImageUrl}
+  publishedTime={article.publishedDate}
+  modifiedTime={article.modifiedDate}
+  category={article.category}
+  tags={article.tags}
+>
   <ReadingProgressBar />
   {hasMath && <link rel="stylesheet" href={katexCssUrl} />}
 

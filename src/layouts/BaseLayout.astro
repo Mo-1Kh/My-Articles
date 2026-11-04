@@ -3,21 +3,22 @@
 import '../styles/theme.css';
 import FontLoader from '../components/FontLoader.astro';
 import Navbar from '../components/Navbar.astro';
+import SEO from '../components/SEO.astro';
 import { siteConfig } from '../../site.config';
 
 interface Props {
   title?: string;
   description?: string;
+  canonicalUrl?: string;
+  ogType?: 'website' | 'article';
+  ogImage?: string;
+  publishedTime?: Date;
+  modifiedTime?: Date;
+  category?: string;
+  tags?: string[];
+  author?: string;
   noIndex?: boolean;
 }
-
-const {
-  title = siteConfig.name,
-  description = siteConfig.description,
-  noIndex = false,
-} = Astro.props;
-
-const pageTitle = title === siteConfig.name ? title : `${title} · ${siteConfig.name}`;
 ---
 
 <!doctype html>
@@ -25,9 +26,8 @@ const pageTitle = title === siteConfig.name ? title : `${title} · ${siteConfig.
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{pageTitle}</title>
-    <meta name="description" content={description} />
-    {noIndex && <meta name="robots" content="noindex, nofollow" />}
+    
+    <SEO {...Astro.props} />
 
     <!-- Zero-flash theme initialization script -->
     <script is:inline>

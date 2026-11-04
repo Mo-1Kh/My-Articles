@@ -150,3 +150,13 @@ export function getPath(path: string): string {
   }
   return `${base}${cleanPath}`;
 }
+
+/**
+ * Helper to generate a fully-qualified canonical URL including origin and base path.
+ */
+export function getCanonicalUrl(path: string): string {
+  const origin = getSiteOrigin();
+  const fullPath = getPath(path);
+  return `${origin}${fullPath}`;
+}
+
