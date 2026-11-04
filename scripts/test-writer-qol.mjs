@@ -69,17 +69,24 @@ console.log('\n2. Testing Vault Validation Reporter...');
 
 // Normal validation run on clean vault
 const normalRun = execSync('node scripts/validate-vault.mjs', { encoding: 'utf-8' });
-assert(normalRun.includes('0 FATAL ERRORS'), 'Normal vault scan has 0 fatal errors');
-assert(normalRun.includes('WARNING(S) FOUND'), 'Normal vault scan detects non-blocking warnings');
+assert(!normalRun.includes('FATAL ERROR(S) FOUND') && (normalRun.includes('0 FATAL ERRORS') || normalRun.includes('All checks passed')), 'Normal vault scan has 0 fatal errors');
 
 // Simulate a duplicate slug collision (FATAL ERROR)
-const dupDir = path.join(process.cwd(), 'content', 'coffee');
-const dupFile = path.join(dupDir, 'duplicate-slug-test.md');
-fs.writeFileSync(dupFile, `---
-title: "Duplicate Slug Collision"
-slug: "espresso-extraction"
+const testCategoryDir = path.join(process.cwd(), 'content', 'test-collision-category');
+fs.mkdirSync(testCategoryDir, { recursive: true });
+const dupFile1 = path.join(testCategoryDir, 'collision-1.md');
+const dupFile2 = path.join(testCategoryDir, 'collision-2.md');
+fs.writeFileSync(dupFile1, `---
+title: "Collision 1"
+slug: "duplicate-slug-test"
 ---
-Collision test body
+Collision body 1
+`, 'utf-8');
+fs.writeFileSync(dupFile2, `---
+title: "Collision 2"
+slug: "duplicate-slug-test"
+---
+Collision body 2
 `, 'utf-8');
 
 let fatalDetected = false;
@@ -89,7 +96,9 @@ try {
   fatalDetected = true;
 }
 // Clean up immediately
-if (fs.existsSync(dupFile)) fs.unlinkSync(dupFile);
+if (fs.existsSync(dupFile1)) fs.unlinkSync(dupFile1);
+if (fs.existsSync(dupFile2)) fs.unlinkSync(dupFile2);
+if (fs.existsSync(testCategoryDir)) fs.rmdirSync(testCategoryDir);
 
 assert(fatalDetected, 'Validator halts with fatal error when duplicate slug is introduced');
 

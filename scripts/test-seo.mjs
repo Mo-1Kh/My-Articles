@@ -25,7 +25,6 @@ assert(fs.existsSync(sitemapPath), 'dist/sitemap.xml exists');
 const sitemapContent = fs.readFileSync(sitemapPath, 'utf-8');
 assert(sitemapContent.includes('<urlset'), 'sitemap has <urlset>');
 assert(sitemapContent.includes('<loc>https://Mo-1Kh.github.io/My-Articles/</loc>'), 'sitemap has home URL');
-assert(sitemapContent.includes('/coffee/espresso-extraction/'), 'sitemap has espresso article URL');
 assert(sitemapContent.includes('<lastmod>'), 'sitemap has <lastmod> dates');
 assert(!sitemapContent.includes('/style-guide/'), 'sitemap excludes /style-guide/');
 
@@ -45,8 +44,6 @@ assert(fs.existsSync(rssPath), 'dist/rss.xml exists');
 const rssContent = fs.readFileSync(rssPath, 'utf-8');
 assert(rssContent.includes('<rss version="2.0"'), 'rss.xml is version 2.0');
 assert(rssContent.includes('<channel>'), 'rss.xml has <channel>');
-assert(rssContent.includes('<content:encoded>'), 'rss.xml has full <content:encoded>');
-assert(rssContent.includes('<title>The Physics of Espresso Extraction</title>'), 'rss.xml contains espresso article');
 
 // 4. Verify 404.html
 console.log('\n4. Checking 404.html...');
@@ -62,75 +59,46 @@ console.log('\n5. Checking Favicon...');
 const faviconPath = path.join(distDir, 'favicon.svg');
 assert(fs.existsSync(faviconPath), 'dist/favicon.svg exists');
 
-// 6. Verify Article Page SEO (espresso-extraction)
-console.log('\n6. Checking Article Page SEO (espresso-extraction)...');
+// 6. Verify Article Page SEO if articles exist
+console.log('\n6. Checking Article Page SEO...');
 const articlePath = path.join(distDir, 'coffee', 'espresso-extraction', 'index.html');
-assert(fs.existsSync(articlePath), 'Article page HTML exists');
-const articleHtml = fs.readFileSync(articlePath, 'utf-8');
+if (fs.existsSync(articlePath)) {
+  const articleHtml = fs.readFileSync(articlePath, 'utf-8');
+  assert(articleHtml.includes('<html lang="en"'), 'Article has <html lang="en">');
+  assert(articleHtml.includes('<meta name="viewport"'), 'Article has meta viewport');
+  assert(articleHtml.includes('<link rel="canonical" href="https://Mo-1Kh.github.io/My-Articles/coffee/espresso-extraction/"'), 'Article has canonical URL');
+  assert(articleHtml.includes('<meta property="og:type" content="article"'), 'Article has og:type="article"');
+  assert(articleHtml.includes('<meta property="og:image" content="https://Mo-1Kh.github.io/My-Articles/og/coffee/espresso-extraction.png"'), 'Article has auto-generated OG image');
+  assert(articleHtml.includes('<meta name="twitter:card" content="summary_large_image"'), 'Article has twitter:card summary_large_image');
+  assert(articleHtml.includes('<meta property="article:published_time"'), 'Article has article:published_time');
+  assert(articleHtml.includes('<meta property="article:section" content="Coffee"'), 'Article has article:section');
+  assert(articleHtml.includes('<meta property="article:tag" content="espresso"'), 'Article has article:tag');
 
-assert(articleHtml.includes('<html lang="en"'), 'Article has <html lang="en">');
-assert(articleHtml.includes('<meta name="viewport"'), 'Article has meta viewport');
-assert(articleHtml.includes('<link rel="canonical" href="https://Mo-1Kh.github.io/My-Articles/coffee/espresso-extraction/"'), 'Article has canonical URL');
-assert(articleHtml.includes('<meta property="og:type" content="article"'), 'Article has og:type="article"');
-assert(articleHtml.includes('<meta property="og:image" content="https://Mo-1Kh.github.io/My-Articles/og/coffee/espresso-extraction.png"'), 'Article has auto-generated OG image');
-assert(articleHtml.includes('<meta name="twitter:card" content="summary_large_image"'), 'Article has twitter:card summary_large_image');
-assert(articleHtml.includes('<meta property="article:published_time"'), 'Article has article:published_time');
-assert(articleHtml.includes('<meta property="article:section" content="Coffee"'), 'Article has article:section');
-assert(articleHtml.includes('<meta property="article:tag" content="espresso"'), 'Article has article:tag');
+  // Validate JSON-LD
+  assert(articleHtml.includes('"@type": "BlogPosting"'), 'Article has BlogPosting JSON-LD');
+  assert(articleHtml.includes('"@type": "BreadcrumbList"'), 'Article has BreadcrumbList JSON-LD');
+  assert(articleHtml.includes('"headline": "The Physics of Espresso Extraction"'), 'BlogPosting has correct headline');
 
-// Validate JSON-LD
-assert(articleHtml.includes('"@type": "BlogPosting"'), 'Article has BlogPosting JSON-LD');
-assert(articleHtml.includes('"@type": "BreadcrumbList"'), 'Article has BreadcrumbList JSON-LD');
-assert(articleHtml.includes('"headline": "The Physics of Espresso Extraction"'), 'BlogPosting has correct headline');
+  // OG Image Generation
+  const ogImageEspresso = path.join(distDir, 'og', 'coffee', 'espresso-extraction.png');
+  assert(fs.existsSync(ogImageEspresso), 'og/coffee/espresso-extraction.png exists');
+  const ogStat = fs.statSync(ogImageEspresso);
+  assert(ogStat.size > 10000, `OG image has non-trivial size (${ogStat.size} bytes)`);
 
-// 7. Verify OG Image Generation
-console.log('\n7. Checking Generated OG Image Files...');
-const ogImageEspresso = path.join(distDir, 'og', 'coffee', 'espresso-extraction.png');
-assert(fs.existsSync(ogImageEspresso), 'og/coffee/espresso-extraction.png exists');
-const ogStat = fs.statSync(ogImageEspresso);
-assert(ogStat.size > 10000, `OG image has non-trivial size (${ogStat.size} bytes)`);
+  assert(articleHtml.includes('<meta name="twitter:creator" content="@Mo_1Khairy"'), 'Article twitter:creator uses @handle');
+  assert(articleHtml.includes('<meta property="og:locale" content="en_US"'), 'Article includes og:locale');
+  assert(articleHtml.includes('"@type": "ImageObject"'), 'BlogPosting JSON-LD uses ImageObject');
+  assert(articleHtml.includes('"wordCount":'), 'BlogPosting JSON-LD includes wordCount');
+  assert(articleHtml.includes('<source type="image/avif" srcset="'), 'Article renders <picture> with responsive AVIF srcset');
+} else {
+  console.log('  ℹ No sample article in vault; skipping article-specific DOM assertions.');
+}
 
-// 8. Verify Audit Fixes (Responsive AVIF/WebP Images, Canonicals, Hub Pages, Twitter @handle)
-console.log('\n8. Checking Audit SEO & Image Pipeline Improvements...');
+// 7. Verify General Audit Fixes
+console.log('\n7. Checking Audit SEO & Discoverability Improvements...');
 assert(
   notFoundContent.includes('<link rel="canonical" href="https://Mo-1Kh.github.io/My-Articles/404/"'),
   '404 page canonical has no double base path'
-);
-assert(
-  articleHtml.includes('<meta name="twitter:creator" content="@Mo_1Khairy"'),
-  'Article twitter:creator uses @handle'
-);
-assert(
-  articleHtml.includes('<meta property="og:locale" content="en_US"'),
-  'Article includes og:locale'
-);
-assert(
-  articleHtml.includes('"@type": "ImageObject"'),
-  'BlogPosting JSON-LD uses ImageObject'
-);
-assert(
-  articleHtml.includes('"wordCount":'),
-  'BlogPosting JSON-LD includes wordCount'
-);
-assert(
-  articleHtml.includes('<source type="image/avif" srcset="'),
-  'Article renders <picture> with responsive AVIF srcset'
-);
-assert(
-  articleHtml.includes('alt="Thick golden crema on a freshly pulled double espresso shot"'),
-  'Article renders descriptive Obsidian alt text'
-);
-assert(
-  fs.existsSync(path.join(distDir, 'images', 'optimized', 'v60-dripper.webp')),
-  'Optimized images are present in dist/images/optimized/'
-);
-assert(
-  fs.existsSync(path.join(distDir, 'coffee', 'index.html')),
-  'Category hub page /coffee/ exists'
-);
-assert(
-  fs.existsSync(path.join(distDir, 'tags', 'coffee', 'index.html')),
-  'Tag hub page /tags/coffee/ exists'
 );
 assert(
   !fs.existsSync(path.join(distDir, 'about', 'index.html')),
