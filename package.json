@@ -4,10 +4,13 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro check && astro build",
+    "build": "astro check && node scripts/validate-vault.mjs && astro build",
     "preview": "astro preview",
+    "new": "node scripts/new-article.mjs",
+    "validate": "node scripts/validate-vault.mjs",
     "test:dates": "node scripts/test-git-dates.mjs",
     "test:seo": "node scripts/test-seo.mjs",
+    "test:writer": "node scripts/test-writer-qol.mjs",
     "astro": "astro"
   },
   "dependencies": {

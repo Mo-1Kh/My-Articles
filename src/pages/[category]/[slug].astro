@@ -98,6 +98,19 @@ function formatDate(date: Date): string {
   {hasMath && <link rel="stylesheet" href={katexCssUrl} />}
 
   <article class:list={['container', 'article-page', { 'has-toc': showToc }]}>
+    {(article.draft || article.isScheduled) && (
+      <aside class="preview-banner" role="status">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>
+          <strong>Preview Mode:</strong> {article.draft ? 'This article has draft: true and is only visible in preview mode.' : `Scheduled post (releases on ${formatDate(article.publishedDate)}).`}
+        </span>
+      </aside>
+    )}
+
     <header class="article-header">
       <div class="article-meta">
         <span class="meta-category">{article.category}</span>
@@ -193,6 +206,24 @@ function formatDate(date: Date): string {
     padding-top: 1.5rem;
     padding-bottom: 5rem;
     transition: max-width 0.2s ease;
+  }
+
+  .preview-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 2rem;
+    border-radius: var(--radius-md);
+    background-color: var(--callout-warning-bg);
+    border: 1px solid var(--callout-warning-border);
+    color: var(--callout-warning-border);
+    font-size: 0.9rem;
+    font-family: var(--font-body);
+  }
+
+  .preview-banner svg {
+    flex-shrink: 0;
   }
 
   /* Desktop two-column layout when TOC is present */

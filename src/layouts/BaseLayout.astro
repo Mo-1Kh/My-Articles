@@ -4,6 +4,7 @@ import '../styles/theme.css';
 import FontLoader from '../components/FontLoader.astro';
 import Navbar from '../components/Navbar.astro';
 import SEO from '../components/SEO.astro';
+import Analytics from '../components/Analytics.astro';
 import { siteConfig } from '../../site.config';
 
 interface Props {
@@ -49,6 +50,7 @@ interface Props {
     </script>
 
     <FontLoader />
+    <Analytics />
   </head>
   <body>
     <Navbar />

@@ -16,11 +16,25 @@ export interface Article {
   publishedDate: Date;
   modifiedDate?: Date;
   draft: boolean;
+  isScheduled?: boolean;
   rawBody: string;
   url: string;
   cover?: string;
   tags: string[];
   entry: CollectionEntry<'articles'>;
+}
+
+/**
+ * Checks if local dev preview mode is enabled (showing drafts and future posts).
+ * Active during local development or when PREVIEW=true / SHOW_DRAFTS=true.
+ */
+export function isPreviewMode(): boolean {
+  if (typeof process === 'undefined') return false;
+  return (
+    process.env.PREVIEW === 'true' ||
+    process.env.SHOW_DRAFTS === 'true' ||
+    process.env.NODE_ENV === 'development'
+  );
 }
 
 export interface CategoryGroup {
@@ -81,7 +95,7 @@ export function extractCategory(id: string): string {
  * - Attachment-only folders
  * - draft: true
  */
-export function shouldIgnoreArticle(id: string, data: any): boolean {
+export function shouldIgnoreArticle(id: string, data: any, allowDrafts: boolean = isPreviewMode()): boolean {
   const normalized = id.replace(/\\/g, '/');
   const parts = normalized.split('/');
 
@@ -101,8 +115,8 @@ export function shouldIgnoreArticle(id: string, data: any): boolean {
     return true;
   }
 
-  // 4. Ignore draft: true
-  if (data?.draft === true) {
+  // 4. Ignore draft: true (unless preview mode is active)
+  if (data?.draft === true && !allowDrafts) {
     return true;
   }
 
@@ -142,8 +156,8 @@ export async function getArticles(): Promise<Article[]> {
       minor: entry.data?.minor,
     });
 
-    // Section 6: Future-dated hiding
-    if (dates.isFuture) {
+    // Section 6: Future-dated hiding (suppressed unless preview mode is active)
+    if (dates.isFuture && !isPreviewMode()) {
       continue;
     }
 
@@ -167,6 +181,7 @@ export async function getArticles(): Promise<Article[]> {
       publishedDate,
       modifiedDate,
       draft: entry.data?.draft === true,
+      isScheduled: dates.isFuture,
       rawBody,
       url,
       cover: entry.data?.cover,

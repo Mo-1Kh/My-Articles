@@ -1,0 +1,34 @@
+---
+// src/components/Analytics.astro
+// Pluggable privacy-friendly analytics (Umami, Plausible, Fathom)
+// Disabled by default. Renders zero scripts when disabled.
+import { siteConfig } from '../../site.config';
+
+const { enabled, provider, websiteId, host } = siteConfig.analytics;
+const shouldRender = enabled && Boolean(websiteId);
+---
+
+{shouldRender && provider === 'umami' && (
+  <script
+    async
+    defer
+    src={host ? `${host.replace(/\/$/, '')}/script.js` : 'https://cloud.umami.is/script.js'}
+    data-website-id={websiteId}
+  />
+)}
+
+{shouldRender && provider === 'plausible' && (
+  <script
+    defer
+    data-domain={host || siteConfig.githubUser + '.github.io'}
+    src="https://plausible.io/js/script.js"
+  />
+)}
+
+{shouldRender && provider === 'fathom' && (
+  <script
+    src={host ? `${host.replace(/\/$/, '')}/script.js` : 'https://cdn.usefathom.com/script.js'}
+    data-site={websiteId}
+    defer
+  />
+)}
