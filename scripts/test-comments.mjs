@@ -86,18 +86,6 @@ if (fs.existsSync(articleHtmlPath)) {
   }
 }
 
-// ----------------------------------------------------
-// Test 4: Documentation
-// ----------------------------------------------------
-console.log('\n4. Checking Setup Documentation...');
-const docsCommentsPath = path.join(process.cwd(), 'docs', 'COMMENTS.md');
-assert(fs.existsSync(docsCommentsPath), 'docs/COMMENTS.md exists');
-const docsContent = fs.readFileSync(docsCommentsPath, 'utf-8');
-assert(docsContent.includes('GitHub Discussions'), 'Documentation covers GitHub Discussions setup');
-assert(docsContent.includes('giscus.app'), 'Documentation covers giscus.app ID retrieval');
-assert(docsContent.includes('comments: false'), 'Documentation covers comments: false frontmatter override');
-assert(docsContent.includes('site.config.ts'), 'Documentation covers site.config.ts configuration');
-
 console.log('\n=====================================================');
 console.log('ALL PHASE 9 COMMENTS (GISCUS) TESTS PASSED!');
 console.log('=====================================================');

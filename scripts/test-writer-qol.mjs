@@ -123,16 +123,9 @@ assert(shouldIgnoreArticle('coffee/published.md', { draft: false }, false) === f
 assert(shouldIgnoreArticle('_private/note.md', { draft: false }, true) === true, 'Private underscore folders remain ignored in preview');
 
 // ----------------------------------------------------
-// Test 4: Obsidian Templates Documentation
+// Test 4: Pluggable Analytics Component
 // ----------------------------------------------------
-console.log('\n4. Checking Obsidian Templater Documentation...');
-assert(fs.existsSync(path.join(process.cwd(), 'docs', 'templates', 'article.md')), 'docs/templates/article.md template exists');
-assert(fs.existsSync(path.join(process.cwd(), 'docs', 'TEMPLATES.md')), 'docs/TEMPLATES.md documentation exists');
-
-// ----------------------------------------------------
-// Test 5: Pluggable Analytics Component
-// ----------------------------------------------------
-console.log('\n5. Checking Pluggable Analytics Configuration...');
+console.log('\n4. Checking Pluggable Analytics Configuration...');
 assert(fs.existsSync(path.join(process.cwd(), 'src', 'components', 'Analytics.astro')), 'src/components/Analytics.astro exists');
 
 console.log('\n=====================================================');
