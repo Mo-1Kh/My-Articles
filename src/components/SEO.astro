@@ -3,6 +3,7 @@
 // Comprehensive Meta, Open Graph, Twitter Cards, and JSON-LD Structured Data
 
 import { siteConfig, getSiteOrigin, getBasePath, getCanonicalUrl, getPath } from '../../site.config';
+import { slugify } from '../lib/slug';
 
 export interface Props {
   title?: string;
@@ -16,12 +17,21 @@ export interface Props {
   tags?: string[];
   author?: string;
   noIndex?: boolean;
+  lang?: string;
+  wordCount?: number;
+  readingMinutes?: number;
 }
+
+const base = getBasePath();
+const pathWithoutBase =
+  base && Astro.url.pathname.startsWith(base)
+    ? Astro.url.pathname.slice(base.length) || '/'
+    : Astro.url.pathname;
 
 const {
   title,
   description = siteConfig.description,
-  canonicalUrl = getCanonicalUrl(Astro.url.pathname),
+  canonicalUrl = getCanonicalUrl(pathWithoutBase),
   ogType = 'website',
   ogImage = siteConfig.defaultShareImage,
   publishedTime,
@@ -30,10 +40,16 @@ const {
   tags = [],
   author = siteConfig.author,
   noIndex = false,
+  lang = 'en',
+  wordCount,
+  readingMinutes,
 } = Astro.props;
 
-// Title formatting: if title is home or empty, use site name, otherwise "Title · Site Name"
-const pageTitle = !title || title === siteConfig.name ? siteConfig.name : `${title} · ${siteConfig.name}`;
+// Title formatting: if title is home or empty, include tagline; otherwise "Title · Site Name"
+const pageTitle =
+  !title || title === siteConfig.name
+    ? `${siteConfig.name} — ${siteConfig.tagline}`
+    : `${title} · ${siteConfig.name}`;
 
 // Full OG Image URL
 const fullOgImageUrl = ogImage.startsWith('http')
@@ -42,6 +58,36 @@ const fullOgImageUrl = ogImage.startsWith('http')
 
 const siteOrigin = getSiteOrigin();
 const siteRootUrl = `${siteOrigin}${getBasePath() || '/'}`;
+
+// Derive X / Twitter @handle from socials.x
+const xUrl = siteConfig.socials.x || '';
+const xHandleMatch = xUrl.match(/(?:x\.com|twitter\.com)\/([A-Za-z0-9_]+)/i);
+const twitterHandle = xHandleMatch ? `@${xHandleMatch[1]}` : '';
+
+// Locale formatting (e.g. "en" -> "en_US", "ar" -> "ar_EG")
+const ogLocale = lang.includes('_')
+  ? lang
+  : lang.includes('-')
+    ? lang.replace('-', '_')
+    : lang === 'ar'
+      ? 'ar_AR'
+      : `${lang}_${lang.toUpperCase() === 'EN' ? 'US' : lang.toUpperCase()}`;
+
+const ogImageAlt = title && title !== siteConfig.name ? `Cover image for: ${title}` : `${siteConfig.name} — ${siteConfig.tagline}`;
+
+// Person schema shared across pages
+const personId = `${siteRootUrl}#person`;
+const sameAs = Object.values(siteConfig.socials).filter(
+  (v): v is string => typeof v === 'string' && v.startsWith('http')
+);
+
+const personSchema = {
+  '@type': 'Person',
+  '@id': personId,
+  name: author,
+  url: siteRootUrl,
+  ...(sameAs.length > 0 ? { sameAs } : {}),
+};
 
 // JSON-LD Schemas
 const jsonLdSchemas: object[] = [];
@@ -53,31 +99,29 @@ if (ogType === 'website' && !noIndex) {
     name: siteConfig.name,
     url: siteRootUrl,
     description: siteConfig.description,
-    author: {
-      '@type': 'Person',
-      name: siteConfig.author,
-    },
+    inLanguage: lang,
+    author: personSchema,
+    publisher: { '@id': personId },
   });
 }
 
 if (ogType === 'article') {
+  const effectiveModified = modifiedTime ?? publishedTime;
   const blogPostingSchema: Record<string, any> = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
     headline: title,
     description: description,
     url: canonicalUrl,
-    author: {
-      '@type': 'Person',
-      name: author,
-      url: siteOrigin,
+    inLanguage: lang,
+    author: personSchema,
+    publisher: personSchema,
+    image: {
+      '@type': 'ImageObject',
+      url: fullOgImageUrl,
+      width: 1200,
+      height: 630,
     },
-    publisher: {
-      '@type': 'Organization',
-      name: siteConfig.name,
-      url: siteOrigin,
-    },
-    image: fullOgImageUrl,
     mainEntityOfPage: {
       '@type': 'WebPage',
       '@id': canonicalUrl,
@@ -88,9 +132,8 @@ if (ogType === 'article') {
     blogPostingSchema.datePublished = publishedTime.toISOString();
   }
 
-  // Section 10: dateModified only when truly modified
-  if (modifiedTime) {
-    blogPostingSchema.dateModified = modifiedTime.toISOString();
+  if (effectiveModified) {
+    blogPostingSchema.dateModified = effectiveModified.toISOString();
   }
 
   if (category) {
@@ -98,12 +141,20 @@ if (ogType === 'article') {
   }
 
   if (tags && tags.length > 0) {
-    blogPostingSchema.keywords = tags.join(', ');
+    blogPostingSchema.keywords = tags;
+  }
+
+  if (typeof wordCount === 'number' && wordCount > 0) {
+    blogPostingSchema.wordCount = wordCount;
+  }
+
+  if (typeof readingMinutes === 'number' && readingMinutes > 0) {
+    blogPostingSchema.timeRequired = `PT${Math.max(1, Math.round(readingMinutes))}M`;
   }
 
   jsonLdSchemas.push(blogPostingSchema);
 
-  // BreadcrumbList schema
+  // BreadcrumbList schema pointing to real category hub page
   const breadcrumbs = [
     {
       '@type': 'ListItem',
@@ -118,7 +169,7 @@ if (ogType === 'article') {
       '@type': 'ListItem',
       position: 2,
       name: category,
-      item: `${siteRootUrl}#${category.toLowerCase()}`,
+      item: getCanonicalUrl(`/${slugify(category)}/`),
     });
   }
 
@@ -139,13 +190,26 @@ if (ogType === 'article') {
 
 <!-- Primary Meta Tags -->
 <title>{pageTitle}</title>
-<meta name="title" content={pageTitle} />
 <meta name="description" content={description} />
+<meta name="author" content={author} />
 <link rel="canonical" href={canonicalUrl} />
 {noIndex && <meta name="robots" content="noindex, nofollow" />}
 
-<!-- Favicon & Icons -->
+<!-- Search Engine Verification -->
+{siteConfig.verification?.google && (
+  <meta name="google-site-verification" content={siteConfig.verification.google} />
+)}
+{siteConfig.verification?.bing && (
+  <meta name="msvalidate.01" content={siteConfig.verification.bing} />
+)}
+
+<!-- Favicon, Icons & Browser Metadata -->
+<link rel="icon" href={getPath('/favicon.ico')} sizes="48x48" />
 <link rel="icon" type="image/svg+xml" href={getPath('/favicon.svg')} />
+<link rel="apple-touch-icon" href={getPath('/apple-touch-icon.png')} />
+<link rel="manifest" href={getPath('/site.webmanifest')} />
+<meta name="theme-color" content="#F5EFE6" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#1D1510" media="(prefers-color-scheme: dark)" />
 
 <!-- RSS Feed Auto-Discovery -->
 <link
@@ -157,13 +221,15 @@ if (ogType === 'article') {
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content={ogType} />
+<meta property="og:locale" content={ogLocale} />
 <meta property="og:url" content={canonicalUrl} />
 <meta property="og:title" content={pageTitle} />
 <meta property="og:description" content={description} />
 <meta property="og:image" content={fullOgImageUrl} />
+<meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content={pageTitle} />
+<meta property="og:image:alt" content={ogImageAlt} />
 <meta property="og:site_name" content={siteConfig.name} />
 
 <!-- Article Specific Open Graph Tags -->
@@ -189,9 +255,14 @@ if (ogType === 'article') {
 <meta name="twitter:title" content={pageTitle} />
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={fullOgImageUrl} />
-{author && <meta name="twitter:creator" content={author} />}
+<meta name="twitter:image:alt" content={ogImageAlt} />
+{twitterHandle && <meta name="twitter:creator" content={twitterHandle} />}
+{twitterHandle && <meta name="twitter:site" content={twitterHandle} />}
 
 <!-- JSON-LD Structured Data -->
 {jsonLdSchemas.map((schema) => (
-  <script type="application/ld+json" set:html={JSON.stringify(schema, null, 2)} />
+  <script
+    type="application/ld+json"
+    set:html={JSON.stringify(schema, null, 2).replace(/</g, '\\u003c')}
+  />
 ))}

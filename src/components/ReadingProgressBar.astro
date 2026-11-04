@@ -1,6 +1,7 @@
 ---
 // src/components/ReadingProgressBar.astro
-// Subtle reading progress indicator fixed at top of viewport per Section 10
+// Subtle reading progress indicator fixed at top of viewport per Section 10.
+// Uses native CSS scroll-driven animations on the compositor with a JS fallback.
 ---
 
 <div
@@ -25,10 +26,34 @@
     pointer-events: none;
     transition: width 0.1s linear;
   }
+
+  @supports (animation-timeline: scroll()) {
+    .reading-progress-bar {
+      width: 100%;
+      transform-origin: 0 50%;
+      transform: scaleX(0);
+      transition: none;
+      animation: reading-progress-grow linear both;
+      animation-timeline: scroll(root);
+    }
+
+    @keyframes reading-progress-grow {
+      from {
+        transform: scaleX(0);
+      }
+      to {
+        transform: scaleX(1);
+      }
+    }
+  }
 </style>
 
 <script>
   function setupReadingProgress() {
+    if (CSS.supports && CSS.supports('animation-timeline: scroll()')) {
+      return;
+    }
+
     const progressBar = document.getElementById('reading-progress');
     const article = document.querySelector('.article-body');
 
@@ -41,9 +66,8 @@
       const rect = article.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
       const articleHeight = rect.height;
-      const startOffset = rect.top; // Distance from top of viewport to article top
+      const startOffset = rect.top;
 
-      // Progress begins when article enters viewport and completes when end reaches bottom
       const scrolled = -startOffset;
       const totalScrollable = articleHeight - viewportHeight * 0.6;
 

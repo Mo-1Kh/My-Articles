@@ -81,20 +81,47 @@ const espressoThemeUrl = `${siteOrigin}${getPath('/giscus-espresso.css')}`;
       const espressoTheme = container.dataset.themeEspresso || 'dark_dimmed';
 
       function getCurrentTheme(): string {
+        const isLocalhost = Boolean(
+          window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1' ||
+          window.location.hostname.endsWith('.local')
+        );
+
         const themeAttr = document.documentElement.getAttribute('data-theme');
-        if (themeAttr === 'espresso') return espressoTheme;
-        if (themeAttr === 'latte') return latteTheme;
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          return espressoTheme;
+        const isDark =
+          themeAttr === 'espresso' ||
+          (!themeAttr && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+        // On localhost before remote deployment, use Giscus built-in themes to prevent 404 wireframe borders
+        if (isLocalhost) {
+          return isDark ? 'dark_dimmed' : 'light';
         }
-        return latteTheme;
+
+        return isDark ? espressoTheme : latteTheme;
       }
 
       let scriptLoaded = false;
 
+      // Listen for Giscus resizeHeight message so the spinner only hides when the iframe is truly sized
+      function onGiscusMessage(e: MessageEvent) {
+        if (e.origin !== 'https://giscus.app') return;
+        const h = e.data?.giscus?.resizeHeight;
+        if (typeof h === 'number' && h > 0) {
+          if (loadingEl) loadingEl.style.display = 'none';
+          if (container) container.style.minHeight = '0';
+        }
+      }
+      window.addEventListener('message', onGiscusMessage);
+
       function loadGiscusScript() {
         if (scriptLoaded || !container) return;
         scriptLoaded = true;
+
+        const preconnect = document.createElement('link');
+        preconnect.rel = 'preconnect';
+        preconnect.href = 'https://giscus.app';
+        preconnect.crossOrigin = 'anonymous';
+        document.head.appendChild(preconnect);
 
         const script = document.createElement('script');
         script.src = 'https://giscus.app/client.js';
@@ -112,13 +139,14 @@ const espressoThemeUrl = `${siteOrigin}${getPath('/giscus-espresso.css')}`;
         script.setAttribute('data-input-position', 'top');
         script.setAttribute('data-theme', getCurrentTheme());
         script.setAttribute('data-lang', 'en');
-        script.setAttribute('data-loading', 'lazy');
+        // Do NOT set data-loading="lazy": IntersectionObserver already lazy-loads the script,
+        // and double lazy-loading leaves the iframe stuck at 150px default height on mobile.
 
         script.onload = () => {
-          // Hide loading spinner once iframe is mounted
+          // Fallback: if resizeHeight postMessage hasn't arrived after 2.5s, hide loading indicator
           setTimeout(() => {
             if (loadingEl) loadingEl.style.display = 'none';
-          }, 800);
+          }, 2500);
         };
 
         container.appendChild(script);
@@ -135,7 +163,7 @@ const espressoThemeUrl = `${siteOrigin}${getPath('/giscus-espresso.css')}`;
               }
             });
           },
-          { rootMargin: '300px 0px' }
+          { rootMargin: '400px 0px' }
         );
 
         observer.observe(container);
@@ -148,7 +176,20 @@ const espressoThemeUrl = `${siteOrigin}${getPath('/giscus-espresso.css')}`;
       window.addEventListener('theme-change', (e: Event) => {
         const customEvent = e as CustomEvent<{ theme: string }>;
         const newThemeName = customEvent.detail?.theme;
-        const targetTheme = newThemeName === 'espresso' ? espressoTheme : latteTheme;
+        const isDark = newThemeName === 'espresso';
+        const isLocalhost = Boolean(
+          window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1' ||
+          window.location.hostname.endsWith('.local')
+        );
+
+        const targetTheme = isLocalhost
+          ? isDark
+            ? 'dark_dimmed'
+            : 'light'
+          : isDark
+            ? espressoTheme
+            : latteTheme;
 
         const iframe = document.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
         if (iframe && iframe.contentWindow) {
@@ -167,9 +208,13 @@ const espressoThemeUrl = `${siteOrigin}${getPath('/giscus-espresso.css')}`;
 
 <style>
   .comments-section {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     margin-top: 3.5rem;
     padding-top: 2.5rem;
     border-top: 1px solid var(--border);
+    overflow: visible;
   }
 
   .comments-header {
@@ -198,8 +243,21 @@ const espressoThemeUrl = `${siteOrigin}${getPath('/giscus-espresso.css')}`;
   }
 
   .giscus-container {
-    min-height: 140px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 260px;
     position: relative;
+    overflow: visible;
+  }
+
+  .giscus-container :global(.giscus),
+  .giscus-container :global(.giscus-frame) {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    display: block !important;
+    border: none !important;
   }
 
   .comments-loading {

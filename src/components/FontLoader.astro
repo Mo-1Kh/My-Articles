@@ -1,35 +1,39 @@
 ---
 // FontLoader.astro
-// Dynamically binds typography settings from site.config.ts and loads self-hosted font assets.
+// Dynamically binds typography settings from site.config.ts, preloads critical Latin WOFF2 fonts,
+// and defines metric-adjusted fallbacks to eliminate layout shift (CLS).
 import { siteConfig } from '../../site.config';
 
-// Load default fontsource weights
-// Fraunces (Headings: 600, 700)
-import '@fontsource/fraunces/600.css';
-import '@fontsource/fraunces/700.css';
+// Load only the Latin subset CSS files (reduces 30 @font-face declarations down to 4)
+import '@fontsource/fraunces/latin-600.css';
+import '@fontsource/fraunces/latin-700.css';
+import '@fontsource/source-serif-4/latin-400.css';
+import '@fontsource/source-serif-4/latin-600.css';
+import '@fontsource/jetbrains-mono/latin-400.css';
 
-// Source Serif 4 (Body: 400, 600)
-import '@fontsource/source-serif-4/400.css';
-import '@fontsource/source-serif-4/600.css';
-
-// JetBrains Mono (Code: 400, 500)
-import '@fontsource/jetbrains-mono/400.css';
-import '@fontsource/jetbrains-mono/500.css';
+import bodyFontUrl from '@fontsource/source-serif-4/files/source-serif-4-latin-400-normal.woff2?url';
+import headingFontUrl from '@fontsource/fraunces/files/fraunces-latin-700-normal.woff2?url';
 
 const { fonts } = siteConfig;
 
-const headingFontStack = fonts.heading.source === 'system'
-  ? fonts.heading.fallback
-  : `'${fonts.heading.family}', ${fonts.heading.fallback}`;
+const headingFontStack =
+  fonts.heading.source === 'system'
+    ? fonts.heading.fallback
+    : `'${fonts.heading.family}', 'Fraunces Fallback', ${fonts.heading.fallback}`;
 
-const bodyFontStack = fonts.body.source === 'system'
-  ? fonts.body.fallback
-  : `'${fonts.body.family}', ${fonts.body.fallback}`;
+const bodyFontStack =
+  fonts.body.source === 'system'
+    ? fonts.body.fallback
+    : `'${fonts.body.family}', 'Source Serif Fallback', ${fonts.body.fallback}`;
 
-const codeFontStack = fonts.code.source === 'system'
-  ? fonts.code.fallback
-  : `'${fonts.code.family}', ${fonts.code.fallback}`;
+const codeFontStack =
+  fonts.code.source === 'system'
+    ? fonts.code.fallback
+    : `'${fonts.code.family}', ${fonts.code.fallback}`;
 ---
+
+<link rel="preload" href={bodyFontUrl} as="font" type="font/woff2" crossorigin />
+<link rel="preload" href={headingFontUrl} as="font" type="font/woff2" crossorigin />
 
 <style is:global define:vars={{
   headingStack: headingFontStack,
@@ -39,6 +43,24 @@ const codeFontStack = fonts.code.source === 'system'
   baseLineHeight: fonts.baseLineHeight,
   contentWidth: fonts.contentWidth
 }}>
+  @font-face {
+    font-family: 'Fraunces Fallback';
+    src: local('Georgia'), local('Times New Roman');
+    size-adjust: 103.5%;
+    ascent-override: 94%;
+    descent-override: 24%;
+    line-gap-override: 0%;
+  }
+
+  @font-face {
+    font-family: 'Source Serif Fallback';
+    src: local('Georgia'), local('Charter'), local('Cambria');
+    size-adjust: 101.2%;
+    ascent-override: 96%;
+    descent-override: 26%;
+    line-gap-override: 0%;
+  }
+
   :root {
     --font-heading: var(--headingStack);
     --font-body: var(--bodyStack);

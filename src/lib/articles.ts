@@ -22,6 +22,9 @@ export interface Article {
   cover?: string;
   tags: string[];
   comments?: boolean;
+  lang: string;
+  dir: 'ltr' | 'rtl';
+  redirects: string[];
   entry: CollectionEntry<'articles'>;
 }
 
@@ -188,11 +191,50 @@ export async function getArticles(): Promise<Article[]> {
       cover: entry.data?.cover,
       tags,
       comments: entry.data?.comments !== false,
+      lang: entry.data?.lang || 'en',
+      dir: entry.data?.dir === 'rtl' ? 'rtl' : 'ltr',
+      redirects: Array.isArray(entry.data?.redirects) ? entry.data.redirects : [],
       entry,
     });
   }
 
   return validArticles;
+}
+
+export interface TagGroup {
+  name: string;
+  slug: string;
+  articles: Article[];
+}
+
+/**
+ * Groups articles by tag for /tags/[tag]/ hub pages.
+ */
+export async function getAllTags(): Promise<TagGroup[]> {
+  const articles = await getArticles();
+  const map = new Map<string, { name: string; articles: Article[] }>();
+
+  for (const article of articles) {
+    for (const rawTag of article.tags) {
+      const tagSlug = slugify(rawTag);
+      if (!tagSlug) continue;
+      const existing = map.get(tagSlug);
+      if (existing) {
+        existing.articles.push(article);
+      } else {
+        map.set(tagSlug, { name: rawTag, articles: [article] });
+      }
+    }
+  }
+
+  const groups: TagGroup[] = [];
+  for (const [slug, { name, articles: tagArticles }] of map.entries()) {
+    tagArticles.sort((a, b) => b.publishedDate.getTime() - a.publishedDate.getTime());
+    groups.push({ name, slug, articles: tagArticles });
+  }
+
+  groups.sort((a, b) => b.articles.length - a.articles.length || a.name.localeCompare(b.name));
+  return groups;
 }
 
 /**

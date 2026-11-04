@@ -151,22 +151,43 @@ for (const filePath of mdFiles) {
     }
   }
 
-  // Check missing images ![[image.png]] and ![alt](image.png) (WARNING)
-  const obsidianImageMatches = [...body.matchAll(/!\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g)];
+  // Check missing images and missing alt text ![[image.png|alt|350]] and ![alt](image.png) (WARNING)
+  const obsidianImageMatches = [...body.matchAll(/!\[\[([^\]|]+)((?:\|[^\]]*)?)\]\]/g)];
   for (const match of obsidianImageMatches) {
     const imgName = match[1].trim().toLowerCase();
+    const pipePart = (match[2] || '').trim();
+    const segments = pipePart
+      .split('|')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const hasAlt = segments.some((seg) => !/^\d+(?:x\d+)?$/.test(seg));
+
     if (!availableImages.has(imgName)) {
       warnings.push({
         type: 'MISSING_IMAGE',
         message: `Obsidian image "![[${match[1].trim()}]]" not found in ./content or ./public`,
         file: relPath,
       });
+    } else if (!hasAlt) {
+      warnings.push({
+        type: 'MISSING_IMAGE_ALT',
+        message: `Obsidian image "![[${match[1].trim()}]]" has no descriptive alt text. Use ![[${match[1].trim()}|Descriptive alt text]].`,
+        file: relPath,
+      });
     }
   }
 
-  const mdImageMatches = [...body.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)];
+  const mdImageMatches = [...body.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g)];
   for (const match of mdImageMatches) {
-    const rawSrc = match[1].trim();
+    const altText = match[1].trim();
+    const rawSrc = match[2].trim();
+    if (!altText) {
+      warnings.push({
+        type: 'MISSING_IMAGE_ALT',
+        message: `Markdown image "![](${rawSrc})" has empty alt text.`,
+        file: relPath,
+      });
+    }
     if (rawSrc.startsWith('http://') || rawSrc.startsWith('https://')) continue;
     const imgName = path.basename(rawSrc).toLowerCase();
     if (!availableImages.has(imgName)) {

@@ -8,6 +8,8 @@ export interface FontRoleConfig {
 
 export interface SiteConfig {
   name: string;
+  tagline: string;
+  header: string;
   author: string;
   description: string;
   githubUser: string;
@@ -17,6 +19,10 @@ export interface SiteConfig {
   isSubpathDeploy: boolean;
   customDomain?: string;
   defaultShareImage: string;
+  verification?: {
+    google?: string;
+    bing?: string;
+  };
   socials: {
     github?: string;
     x?: string;
@@ -55,19 +61,26 @@ export interface SiteConfig {
 
 export const siteConfig: SiteConfig = {
   name: "Mo's Articles",
-  author: "Mohamed khairy",
-  description: "Personal articles, technical writings, and reflections.",
+  tagline: "Software Engineering & technical Writing",
+  header: "A place for me",
+  author: "Mohamed Khairy",
+  description:
+    "to share what I learned.",
   githubUser: "Mo-1Kh",
   repoName: "My-Articles",
   isSubpathDeploy: true,
   customDomain: "",
   defaultShareImage: "/og-default.png",
+  verification: {
+    google: "",
+    bing: "",
+  },
   socials: {
     github: "https://github.com/Mo-1Kh",
-    x: "https://x.com",
-    linkedin: "https://linkedin.com",
+    x: "https://x.com/Mo_1Khairy",
+    linkedin: "https://www.linkedin.com/in/mohamed-khairy-swe/",
     youtube: "",
-    email: "mohamed@example.com",
+    email: "mohamedkhairy.swe@gmail.com",
     rss: true,
   },
   fonts: {
@@ -140,11 +153,14 @@ export function getBasePath(): string {
 }
 
 /**
- * Helper to generate an absolute route with base path included.
+ * Helper to generate an absolute route with base path included (idempotent if base is already prefixed).
  */
 export function getPath(path: string): string {
   const base = getBasePath();
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  let cleanPath = path.startsWith("/") ? path : `/${path}`;
+  if (base !== "" && (cleanPath === base || cleanPath.startsWith(`${base}/`))) {
+    cleanPath = cleanPath.slice(base.length) || "/";
+  }
   if (cleanPath === "/" && base !== "") {
     return `${base}/`;
   }

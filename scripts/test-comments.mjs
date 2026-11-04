@@ -17,20 +17,22 @@ console.log('Running Phase 9 Comments (Giscus) Verification');
 console.log('=====================================================\n');
 
 // ----------------------------------------------------
-// Test 1: Verify Custom Coffee Giscus Stylesheets
+// Test 1: Verify Custom Giscus Stylesheets
 // ----------------------------------------------------
-console.log('1. Checking Custom Giscus Coffee Stylesheets...');
+console.log('1. Checking Custom Giscus Stylesheets...');
 const latteCssPath = path.join(process.cwd(), 'public', 'giscus-latte.css');
 assert(fs.existsSync(latteCssPath), 'public/giscus-latte.css exists');
 const latteCss = fs.readFileSync(latteCssPath, 'utf-8');
-assert(latteCss.includes('#CFAD85'), 'giscus-latte.css uses user requested light brown #CFAD85');
+assert(latteCss.includes('#F1EFEA'), 'giscus-latte.css uses user requested light #F1EFEA');
 assert(latteCss.includes('--color-canvas-default'), 'giscus-latte.css defines GitHub Primer CSS variables');
+assert(latteCss.includes('.gsc-comment-box'), 'giscus-latte.css defines card container rules');
 
 const espressoCssPath = path.join(process.cwd(), 'public', 'giscus-espresso.css');
 assert(fs.existsSync(espressoCssPath), 'public/giscus-espresso.css exists');
 const espressoCss = fs.readFileSync(espressoCssPath, 'utf-8');
-assert(espressoCss.includes('#211409'), 'giscus-espresso.css uses user requested dark brown #211409');
+assert(espressoCss.includes('#1B1D23'), 'giscus-espresso.css uses user requested dark #1B1D23');
 assert(espressoCss.includes('--color-canvas-default'), 'giscus-espresso.css defines GitHub Primer CSS variables');
+assert(espressoCss.includes('.gsc-comment-box'), 'giscus-espresso.css defines card container rules');
 
 // ----------------------------------------------------
 // Test 2: Verify Comments Component File
@@ -44,9 +46,9 @@ assert(commentsComp.includes('postMessage'), 'Comments component implements post
 assert(commentsComp.includes('theme-change'), 'Comments component listens to site theme-change events');
 
 // ----------------------------------------------------
-// Test 3: Verify Built HTML Pages (Safe Default: Disabled)
+// Test 3: Verify Built HTML Pages
 // ----------------------------------------------------
-console.log('\n3. Checking Production Built Pages (Disabled by Default)...');
+console.log('\n3. Checking Production Built Pages...');
 const distDir = path.join(process.cwd(), 'dist');
 
 // Home page must NOT have comments
@@ -70,11 +72,18 @@ if (fs.existsSync(styleGuideHtmlPath)) {
   assert(!styleGuideHtml.includes('giscus-container'), 'Style guide does not contain comments');
 }
 
-// Article page must NOT have comments when disabled in site.config.ts
+// Article page comments follow site.config.ts
+const siteConfigRaw = fs.readFileSync(path.join(process.cwd(), 'site.config.ts'), 'utf-8');
+const isCommentsConfigured = /enabled:\s*true/.test(siteConfigRaw) && /repoId:\s*["']R_/.test(siteConfigRaw);
+
 const articleHtmlPath = path.join(distDir, 'coffee', 'espresso-extraction', 'index.html');
 if (fs.existsSync(articleHtmlPath)) {
   const articleHtml = fs.readFileSync(articleHtmlPath, 'utf-8');
-  assert(!articleHtml.includes('giscus-container'), 'Article page cleanly excludes comments when unconfigured/disabled');
+  if (isCommentsConfigured) {
+    assert(articleHtml.includes('giscus-container'), 'Article page cleanly mounts comments when enabled in site.config.ts');
+  } else {
+    assert(!articleHtml.includes('giscus-container'), 'Article page cleanly excludes comments when unconfigured/disabled');
+  }
 }
 
 // ----------------------------------------------------

@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro check && node scripts/validate-vault.mjs && astro build",
+    "images": "node scripts/optimize-images.mjs",
+    "dev": "node scripts/optimize-images.mjs && astro dev",
+    "build": "astro check && node scripts/validate-vault.mjs && node scripts/optimize-images.mjs && astro build",
     "preview": "astro preview",
     "new": "node scripts/new-article.mjs",
     "validate": "node scripts/validate-vault.mjs",

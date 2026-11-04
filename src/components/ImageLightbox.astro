@@ -23,13 +23,14 @@
     left: 0;
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     background-color: rgba(29, 21, 16, 0.88);
     backdrop-filter: blur(10px);
     z-index: 100;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2rem;
+    padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) calc(1rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s ease-in-out;
@@ -42,8 +43,10 @@
 
   .lightbox-close-btn {
     position: absolute;
-    top: 1.5rem;
-    right: 1.5rem;
+    top: max(1rem, env(safe-area-inset-top));
+    right: max(1rem, env(safe-area-inset-right));
+    min-width: 44px;
+    min-height: 44px;
     background: transparent;
     border: 1px solid var(--border);
     color: var(--text);
@@ -64,6 +67,7 @@
   .lightbox-content {
     max-width: 90vw;
     max-height: 85vh;
+    max-height: 85dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -74,7 +78,9 @@
   .lightbox-image {
     max-width: 100%;
     max-height: 75vh;
+    max-height: 70dvh;
     object-fit: contain;
+    touch-action: pinch-zoom;
     border-radius: 6px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     transform: scale(0.95);
@@ -117,7 +123,7 @@
     function openLightbox(img: HTMLImageElement) {
       if (!lightbox || !lightboxImg || !lightboxCaption || !closeBtn) return;
       lastActiveElement = document.activeElement as HTMLElement | null;
-      lightboxImg.src = img.currentSrc || img.src;
+      lightboxImg.src = img.dataset.full || img.currentSrc || img.src;
       lightboxImg.alt = img.alt || '';
       lightboxCaption.textContent = img.alt || img.title || '';
       lightbox.removeAttribute('hidden');

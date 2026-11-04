@@ -1,0 +1,60 @@
+---
+// src/pages/[...redirect].astro
+// Generates static HTML redirect pages (instant meta-refresh + canonical link)
+// for any old URLs declared in an article's `redirects: [...]` frontmatter.
+import { getArticles } from '../lib/articles';
+import { getCanonicalUrl, getPath } from '../../site.config';
+
+export async function getStaticPaths() {
+  const articles = await getArticles();
+  const paths: {
+    params: { redirect: string };
+    props: { targetUrl: string; canonicalTarget: string; title: string };
+  }[] = [];
+
+  for (const article of articles) {
+    if (!article.redirects || article.redirects.length === 0) continue;
+
+    for (const rawOldPath of article.redirects) {
+      const cleaned = rawOldPath.replace(/^\/+|\/+$/g, '');
+      if (!cleaned) continue;
+
+      paths.push({
+        params: { redirect: cleaned },
+        props: {
+          targetUrl: getPath(`/${article.categorySlug}/${article.slug}/`),
+          canonicalTarget: getCanonicalUrl(`/${article.categorySlug}/${article.slug}/`),
+          title: article.title,
+        },
+      });
+    }
+  }
+
+  return paths;
+}
+
+interface Props {
+  targetUrl: string;
+  canonicalTarget: string;
+  title: string;
+}
+
+const { targetUrl, canonicalTarget, title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecting to {title}…</title>
+    <link rel="canonical" href={canonicalTarget} />
+    <meta name="robots" content="noindex" />
+    <meta http-equiv="refresh" content={`0; url=${targetUrl}`} />
+    <script is:inline define:vars={{ targetUrl }}>
+      window.location.replace(targetUrl);
+    </script>
+  </head>
+  <body>
+    <p>Redirecting to <a href={targetUrl}>{title}</a>…</p>
+  </body>
+</html>

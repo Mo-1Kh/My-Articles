@@ -55,6 +55,17 @@
   .back-to-top-btn:active {
     transform: translateY(0);
   }
+
+  @media (max-width: 640px) {
+    .back-to-top-btn {
+      right: 1rem;
+      bottom: calc(1rem + env(safe-area-inset-bottom));
+      width: 2.75rem;
+      height: 2.75rem;
+      min-width: 44px;
+      min-height: 44px;
+    }
+  }
 </style>
 
 <script>

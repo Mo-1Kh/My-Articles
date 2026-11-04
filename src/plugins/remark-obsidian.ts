@@ -1,15 +1,76 @@
 // src/plugins/remark-obsidian.ts
-// Handles Obsidian comments, highlights, wikilinks, tags, and image embeds in remark AST.
+// Handles Obsidian comments, highlights, wikilinks, tags, and responsive AVIF/WebP image embeds in remark AST.
 import { visit } from 'unist-util-visit';
 import fs from 'node:fs';
 import path from 'node:path';
 import { slugify } from '../lib/slug.js';
-import { scanAndOptimizeImages, resolveImage } from '../lib/images.js';
+import { scanAndOptimizeImages, resolveImage, type OptimizedImageInfo } from '../lib/images.js';
 
 interface WikiTarget {
   categorySlug: string;
   articleSlug: string;
   url: string;
+}
+
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function humanizeFilename(filename: string): string {
+  return path
+    .parse(filename)
+    .name.replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function renderResponsiveFigure(
+  imgInfo: OptimizedImageInfo,
+  options: {
+    explicitWidth?: number | null;
+    customAlt?: string | null;
+    isFirstImage: boolean;
+  }
+): string {
+  const { explicitWidth, customAlt, isFirstImage } = options;
+  const renderWidth = explicitWidth || imgInfo.width;
+  const renderHeight = Math.round(renderWidth * (imgInfo.height / imgInfo.width));
+
+  const rawAlt = customAlt && customAlt.trim() !== '' ? customAlt.trim() : humanizeFilename(imgInfo.filename);
+  const safeAlt = escapeHtml(rawAlt);
+  const hasExplicitCaption = Boolean(customAlt && customAlt.trim() !== '' && customAlt.trim() !== imgInfo.filename);
+
+  const loadingAttr = isFirstImage ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"';
+  const sizesAttr = explicitWidth
+    ? `${explicitWidth}px`
+    : '(min-width: 760px) 720px, calc(100vw - 2rem)';
+
+  const styleParts: string[] = [];
+  if (imgInfo.placeholder) {
+    styleParts.push(`background: url(${imgInfo.placeholder}) center/cover no-repeat`);
+  }
+  const styleAttr = styleParts.length > 0 ? ` style="${styleParts.join('; ')}"` : '';
+  const dataFullAttr = imgInfo.fullAvifUrl ? ` data-full="${escapeHtml(imgInfo.fullAvifUrl)}"` : '';
+
+  const avifVariants = imgInfo.variants?.avif || [];
+  const webpVariants = imgInfo.variants?.webp || [];
+
+  let mediaMarkup = '';
+  if (avifVariants.length > 0 && webpVariants.length > 0) {
+    const avifSrcset = avifVariants.map((v) => `${v.src} ${v.w}w`).join(', ');
+    const webpSrcset = webpVariants.map((v) => `${v.src} ${v.w}w`).join(', ');
+    mediaMarkup = `<picture><source type="image/avif" srcset="${avifSrcset}" sizes="${sizesAttr}" /><img src="${imgInfo.optimizedUrl}" srcset="${webpSrcset}" sizes="${sizesAttr}" alt="${safeAlt}" width="${renderWidth}" height="${renderHeight}" ${loadingAttr} decoding="async" class="zoomable-image"${styleAttr}${dataFullAttr} /></picture>`;
+  } else {
+    mediaMarkup = `<img src="${imgInfo.optimizedUrl}" alt="${safeAlt}" width="${renderWidth}" height="${renderHeight}" ${loadingAttr} decoding="async" class="zoomable-image"${styleAttr}${dataFullAttr} />`;
+  }
+
+  const captionMarkup = hasExplicitCaption ? `<figcaption>${safeAlt}</figcaption>` : '';
+  return `<figure class="article-image-figure">${mediaMarkup}${captionMarkup}</figure>`;
 }
 
 // Build a fast lookup map of articles in ./content
@@ -66,8 +127,8 @@ export function remarkObsidian() {
   const vaultMap = buildVaultMap();
 
   return async (tree: any) => {
-    // Scan and optimize all vault images
     await scanAndOptimizeImages();
+    let imageCounter = 0;
 
     // 1. First pass: strip Obsidian %% comments %% across all text nodes
     visit(tree, 'text', (node: any) => {
@@ -86,7 +147,7 @@ export function remarkObsidian() {
       }
     });
 
-    // 2. Process text nodes for ==highlights==, [[wikilinks]], ![[embeds]], and #tags
+    // 3. Process text nodes for ==highlights==, [[wikilinks]], ![[embeds]], and #tags
     visit(tree, 'paragraph', (paragraphNode: any) => {
       const newChildren: any[] = [];
 
@@ -100,7 +161,7 @@ export function remarkObsidian() {
         if (!text) continue;
 
         // Regular expressions for Obsidian syntax
-        // Wikilink: [[target#heading|alias]] or ![[image.png|300]]
+        // Wikilink: [[target#heading|alias]] or ![[image.png|alt|300]]
         // Highlight: ==text==
         // Tag: #tag (preceded by whitespace/start and followed by whitespace/punctuation)
         const combinedRegex = /(!?\[\[([^[\]]+)\]\]|==([^=]+)==|(?<=\s|^)#([a-zA-Z0-9_\/-]+)(?=\s|$|[.,;:!?]))/g;
@@ -122,30 +183,43 @@ export function remarkObsidian() {
 
           const matchedStr = match[0];
 
-          // 2a. Embed: ![[image.png|width]]
+          // 3a. Embed: ![[image.png|alt text|350]] or ![[image.png|350]]
           if (matchedStr.startsWith('![[')) {
             const inner = match[2];
-            const [target, widthParam] = inner.split('|').map((s: string) => s.trim());
+            const segments = inner.split('|').map((s: string) => s.trim()).filter(Boolean);
+            const target = segments[0];
+            let explicitWidth: number | null = null;
+            let customAlt: string | null = null;
+
+            for (const seg of segments.slice(1)) {
+              if (/^\d+(?:x\d+)?$/.test(seg)) {
+                explicitWidth = parseInt(seg.split('x')[0], 10);
+              } else {
+                customAlt = seg;
+              }
+            }
+
             const imgInfo = resolveImage(target);
 
             if (imgInfo) {
-              const explicitWidth = widthParam ? parseInt(widthParam, 10) : null;
-              const renderWidth = explicitWidth || imgInfo.width;
-              const renderHeight = Math.round(renderWidth * (imgInfo.height / imgInfo.width));
-
+              const isFirstImage = imageCounter === 0;
+              imageCounter++;
               newChildren.push({
                 type: 'html',
-                value: `<figure class="article-image-figure"><img src="${imgInfo.optimizedUrl}" alt="${imgInfo.filename}" width="${renderWidth}" height="${renderHeight}" loading="lazy" decoding="async" class="zoomable-image" style="aspect-ratio: ${renderWidth} / ${renderHeight};" /><figcaption>${imgInfo.filename}</figcaption></figure>`,
+                value: renderResponsiveFigure(imgInfo, {
+                  explicitWidth,
+                  customAlt,
+                  isFirstImage,
+                }),
               });
             } else {
-              // Missing image reported
               newChildren.push({
                 type: 'html',
-                value: `<div class="missing-image-alert" role="alert"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> Missing image: <code>${target}</code></div>`,
+                value: `<div class="missing-image-alert" role="alert"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> Missing image: <code>${escapeHtml(target)}</code></div>`,
               });
             }
           }
-          // 2b. Wikilink: [[target#heading|alias]]
+          // 3b. Wikilink: [[target#heading|alias]]
           else if (matchedStr.startsWith('[[')) {
             const inner = match[2];
             let target = inner;
@@ -168,32 +242,31 @@ export function remarkObsidian() {
             const resolved = vaultMap.get(cleanTargetKey);
 
             if (resolved) {
-              const displayText = alias || heading || target;
+              const displayText = escapeHtml(alias || heading || target);
               const href = heading ? `${resolved.url}#${slugify(heading)}` : resolved.url;
               newChildren.push({
                 type: 'html',
                 value: `<a href="${href}" class="wikilink">${displayText}</a>`,
               });
             } else {
-              // Broken wikilinks render as plain text per requirement
-              const displayText = alias || heading || target;
+              const displayText = escapeHtml(alias || heading || target);
               newChildren.push({
                 type: 'html',
                 value: `<span class="wikilink-broken">${displayText}</span>`,
               });
             }
           }
-          // 2c. Highlight: ==text==
+          // 3c. Highlight: ==text==
           else if (matchedStr.startsWith('==')) {
-            const highlightText = match[3];
+            const highlightText = escapeHtml(match[3]);
             newChildren.push({
               type: 'html',
               value: `<mark class="highlight">${highlightText}</mark>`,
             });
           }
-          // 2d. Tag: #tag
+          // 3d. Tag: #tag
           else if (matchedStr.startsWith('#')) {
-            const tagName = match[4];
+            const tagName = escapeHtml(match[4]);
             newChildren.push({
               type: 'html',
               value: `<span class="tag">#${tagName}</span>`,
@@ -221,15 +294,20 @@ export function remarkObsidian() {
       const imgInfo = resolveImage(cleanUrl);
 
       if (imgInfo && parent && typeof index === 'number') {
-        const alt = node.alt || imgInfo.filename;
+        const isFirstImage = imageCounter === 0;
+        imageCounter++;
         parent.children[index] = {
           type: 'html',
-          value: `<figure class="article-image-figure"><img src="${imgInfo.optimizedUrl}" alt="${alt}" width="${imgInfo.width}" height="${imgInfo.height}" loading="lazy" decoding="async" class="zoomable-image" style="aspect-ratio: ${imgInfo.width} / ${imgInfo.height};" /><figcaption>${alt}</figcaption></figure>`,
+          value: renderResponsiveFigure(imgInfo, {
+            explicitWidth: null,
+            customAlt: node.alt || null,
+            isFirstImage,
+          }),
         };
       } else if (!imgInfo && parent && typeof index === 'number') {
         parent.children[index] = {
           type: 'html',
-          value: `<div class="missing-image-alert" role="alert"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> Missing image: <code>${node.url}</code></div>`,
+          value: `<div class="missing-image-alert" role="alert"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> Missing image: <code>${escapeHtml(node.url)}</code></div>`,
         };
       }
     });

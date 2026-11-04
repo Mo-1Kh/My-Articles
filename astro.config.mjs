@@ -9,9 +9,18 @@ import rehypeKatex from 'rehype-katex';
 export default defineConfig({
   site: getSiteOrigin(),
   base: getBasePath(),
+  trailingSlash: 'always',
   output: 'static',
+  prefetch: {
+    prefetchAll: true,
+    defaultStrategy: 'hover',
+  },
+  experimental: {
+    clientPrerender: true,
+  },
   build: {
     format: 'directory',
+    inlineStylesheets: 'always',
   },
   server: {
     port: 4321,

@@ -6,6 +6,9 @@
 <style is:global>
   .code-block-container {
     position: relative;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     margin: 1.75rem 0;
     border-radius: var(--radius-md);
     border: 1px solid var(--border);
@@ -59,7 +62,19 @@
     border-color: var(--callout-tip-border);
   }
 
+  @media (hover: none) {
+    .code-copy-btn {
+      min-height: 38px;
+      padding: 0.35rem 0.65rem;
+      border-color: var(--border);
+      background-color: var(--bg);
+    }
+  }
+
   .code-block-container pre.astro-code {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     margin: 0 !important;
     padding: 1rem 1.15rem !important;
     border: none !important;

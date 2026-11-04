@@ -1,0 +1,21 @@
+{
+  "name": "Mo's Articles",
+  "short_name": "Mo's Articles",
+  "description": "Long-form essays and technical notes by Mohamed Khairy exploring software engineering, espresso and pour-over extraction physics, and clear thinking in public.",
+  "start_url": "/My-Articles/",
+  "display": "standalone",
+  "background_color": "#F5EFE6",
+  "theme_color": "#1D1510",
+  "icons": [
+    {
+      "src": "/My-Articles/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/My-Articles/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

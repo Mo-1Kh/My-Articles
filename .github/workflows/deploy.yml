@@ -46,17 +46,33 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Brand Fonts for Sharp SVG OG Rendering
+        run: |
+          mkdir -p ~/.fonts
+          cp node_modules/@fontsource/fraunces/files/fraunces-latin-*.woff ~/.fonts/ 2>/dev/null || true
+          cp node_modules/@fontsource/source-serif-4/files/source-serif-4-latin-*.woff ~/.fonts/ 2>/dev/null || true
+          cp node_modules/@fontsource/jetbrains-mono/files/jetbrains-mono-latin-*.woff ~/.fonts/ 2>/dev/null || true
+          fc-cache -f -v || true
+
+      - name: Cache Optimized Images
+        uses: actions/cache@v4
+        with:
+          path: .cache/images
+          key: images-${{ hashFiles('content/**/*.png', 'content/**/*.jpg', 'content/**/*.jpeg', 'content/**/*.gif', 'content/**/*.webp') }}
+          restore-keys: |
+            images-
+
+      - name: Build Static Site
+        run: pnpm run build
+        env:
+          NODE_ENV: production
+
       - name: Run Verification Test Suites
         run: |
           pnpm run test:dates
           pnpm run test:seo
           pnpm run test:writer
           pnpm run test:comments
-
-      - name: Build Static Site
-        run: pnpm run build
-        env:
-          NODE_ENV: production
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3

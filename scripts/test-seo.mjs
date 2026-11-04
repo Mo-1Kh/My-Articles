@@ -90,6 +90,57 @@ assert(fs.existsSync(ogImageEspresso), 'og/coffee/espresso-extraction.png exists
 const ogStat = fs.statSync(ogImageEspresso);
 assert(ogStat.size > 10000, `OG image has non-trivial size (${ogStat.size} bytes)`);
 
+// 8. Verify Audit Fixes (Responsive AVIF/WebP Images, Canonicals, Hub Pages, Twitter @handle)
+console.log('\n8. Checking Audit SEO & Image Pipeline Improvements...');
+assert(
+  notFoundContent.includes('<link rel="canonical" href="https://Mo-1Kh.github.io/My-Articles/404/"'),
+  '404 page canonical has no double base path'
+);
+assert(
+  articleHtml.includes('<meta name="twitter:creator" content="@Mo_1Khairy"'),
+  'Article twitter:creator uses @handle'
+);
+assert(
+  articleHtml.includes('<meta property="og:locale" content="en_US"'),
+  'Article includes og:locale'
+);
+assert(
+  articleHtml.includes('"@type": "ImageObject"'),
+  'BlogPosting JSON-LD uses ImageObject'
+);
+assert(
+  articleHtml.includes('"wordCount":'),
+  'BlogPosting JSON-LD includes wordCount'
+);
+assert(
+  articleHtml.includes('<source type="image/avif" srcset="'),
+  'Article renders <picture> with responsive AVIF srcset'
+);
+assert(
+  articleHtml.includes('alt="Thick golden crema on a freshly pulled double espresso shot"'),
+  'Article renders descriptive Obsidian alt text'
+);
+assert(
+  fs.existsSync(path.join(distDir, 'images', 'optimized', 'v60-dripper.webp')),
+  'Optimized images are present in dist/images/optimized/'
+);
+assert(
+  fs.existsSync(path.join(distDir, 'coffee', 'index.html')),
+  'Category hub page /coffee/ exists'
+);
+assert(
+  fs.existsSync(path.join(distDir, 'tags', 'coffee', 'index.html')),
+  'Tag hub page /tags/coffee/ exists'
+);
+assert(
+  !fs.existsSync(path.join(distDir, 'about', 'index.html')),
+  'Author page /about/ does not exist (removed as requested)'
+);
+assert(
+  sitemapContent.includes('xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"'),
+  'Sitemap includes Google Image Sitemap namespace and entries'
+);
+
 console.log('\n=====================================================');
 console.log('ALL PHASE 7 SEO & DISCOVERABILITY CHECKS PASSED!');
 console.log('=====================================================');

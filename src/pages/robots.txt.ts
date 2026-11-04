@@ -9,7 +9,6 @@ export const GET: APIRoute = async () => {
   const content = `User-agent: *
 Allow: /
 Disallow: /style-guide/
-Disallow: /_astro/
 
 Sitemap: ${sitemapUrl}
 `.trim();

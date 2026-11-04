@@ -5,6 +5,71 @@ import ThemeToggle from './ThemeToggle.astro';
 
 const homeUrl = getPath('/');
 const rssUrl = getPath('/rss.xml');
+
+interface NavLinkItem {
+  href: string;
+  label: string;
+  ariaLabel: string;
+  external: boolean;
+  svg: string;
+}
+
+const socialItems: NavLinkItem[] = [
+  siteConfig.socials.github
+    ? {
+        href: siteConfig.socials.github,
+        label: 'GitHub',
+        ariaLabel: 'GitHub Profile',
+        external: true,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>`,
+      }
+    : null,
+  siteConfig.socials.x
+    ? {
+        href: siteConfig.socials.x,
+        label: 'X (Twitter)',
+        ariaLabel: 'X (formerly Twitter)',
+        external: true,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
+      }
+    : null,
+  siteConfig.socials.linkedin
+    ? {
+        href: siteConfig.socials.linkedin,
+        label: 'LinkedIn',
+        ariaLabel: 'LinkedIn Profile',
+        external: true,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>`,
+      }
+    : null,
+  siteConfig.socials.youtube
+    ? {
+        href: siteConfig.socials.youtube,
+        label: 'YouTube',
+        ariaLabel: 'YouTube Channel',
+        external: true,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>`,
+      }
+    : null,
+  siteConfig.socials.email
+    ? {
+        href: `mailto:${siteConfig.socials.email}`,
+        label: 'Email',
+        ariaLabel: 'Send Email',
+        external: false,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>`,
+      }
+    : null,
+  siteConfig.socials.rss
+    ? {
+        href: rssUrl,
+        label: 'RSS Feed',
+        ariaLabel: 'RSS Feed',
+        external: false,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg>`,
+      }
+    : null,
+].filter((item): item is NavLinkItem => item !== null);
 ---
 
 <header class="site-header">
@@ -17,112 +82,23 @@ const rssUrl = getPath('/rss.xml');
 
     <nav class="nav-actions" aria-label="Social links and preferences">
       <ul class="social-list">
-        {siteConfig.socials.github && (
+        {socialItems.map((item) => (
           <li>
             <a
-              href={siteConfig.socials.github}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="GitHub Profile"
-              title="GitHub"
+              href={item.href}
+              target={item.external ? '_blank' : undefined}
+              rel={item.external ? 'noopener noreferrer' : undefined}
+              aria-label={item.ariaLabel}
+              title={item.label}
               class="icon-link"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
-              </svg>
+              <Fragment set:html={item.svg} />
             </a>
           </li>
-        )}
-
-        {siteConfig.socials.x && (
-          <li>
-            <a
-              href={siteConfig.socials.x}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="X (formerly Twitter)"
-              title="X"
-              class="icon-link"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-              </svg>
-            </a>
-          </li>
-        )}
-
-        {siteConfig.socials.linkedin && (
-          <li>
-            <a
-              href={siteConfig.socials.linkedin}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="LinkedIn Profile"
-              title="LinkedIn"
-              class="icon-link"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
-                <rect x="2" y="9" width="4" height="12"></rect>
-                <circle cx="4" cy="4" r="2"></circle>
-              </svg>
-            </a>
-          </li>
-        )}
-
-        {siteConfig.socials.youtube && (
-          <li>
-            <a
-              href={siteConfig.socials.youtube}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="YouTube Channel"
-              title="YouTube"
-              class="icon-link"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path>
-                <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon>
-              </svg>
-            </a>
-          </li>
-        )}
-
-        {siteConfig.socials.email && (
-          <li>
-            <a
-              href={`mailto:${siteConfig.socials.email}`}
-              aria-label="Send Email"
-              title="Email"
-              class="icon-link"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                <polyline points="22,6 12,13 2,6"></polyline>
-              </svg>
-            </a>
-          </li>
-        )}
-
-        {siteConfig.socials.rss && (
-          <li>
-            <a
-              href={rssUrl}
-              aria-label="RSS Feed"
-              title="RSS Feed"
-              class="icon-link"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 11a9 9 0 0 1 9 9"></path>
-                <path d="M4 4a16 16 0 0 1 16 16"></path>
-                <circle cx="5" cy="19" r="1"></circle>
-              </svg>
-            </a>
-          </li>
-        )}
+        ))}
       </ul>
 
-      <div class="divider"></div>
+      <div class="divider" aria-hidden="true"></div>
 
       <ThemeToggle />
     </nav>
@@ -136,6 +112,7 @@ const rssUrl = getPath('/rss.xml');
     position: sticky;
     top: 0;
     z-index: 40;
+    padding-top: env(safe-area-inset-top);
     backdrop-filter: blur(8px);
     transition: background-color 0.2s ease, border-color 0.2s ease;
   }
@@ -144,21 +121,39 @@ const rssUrl = getPath('/rss.xml');
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-top: 0.9rem;
-    padding-bottom: 0.9rem;
+    gap: 0.75rem;
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+
+  .brand {
+    min-width: 0;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
   }
 
   .brand-link {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 44px;
     text-decoration: none;
     color: var(--text);
   }
 
   .brand-title {
+    display: inline-block;
     font-family: var(--font-heading);
     font-weight: 700;
     font-size: 1.25rem;
+    line-height: 1.2;
     letter-spacing: -0.01em;
     color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     transition: color 0.15s ease;
   }
 
@@ -169,13 +164,14 @@ const rssUrl = getPath('/rss.xml');
   .nav-actions {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
+    flex-shrink: 0;
   }
 
   .social-list {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.2rem;
     list-style: none;
     margin: 0;
     padding: 0;
@@ -189,7 +185,9 @@ const rssUrl = getPath('/rss.xml');
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.4rem;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.5rem;
     color: var(--text-muted);
     text-decoration: none;
     border-radius: 6px;
@@ -203,26 +201,59 @@ const rssUrl = getPath('/rss.xml');
 
   .divider {
     width: 1px;
-    height: 1.25rem;
+    height: 1.35rem;
     background-color: var(--border);
+  }
+
+  @media (max-width: 640px) {
+    .header-container {
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+      gap: 0.5rem;
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+    }
   }
 
   @media (max-width: 480px) {
     .header-container {
-      padding-top: 0.75rem;
-      padding-bottom: 0.75rem;
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+      gap: 0.35rem;
+    }
+
+    .brand-link {
+      min-height: 36px;
     }
 
     .brand-title {
-      font-size: 1.1rem;
+      font-size: 1rem;
+    }
+
+    .nav-actions {
+      gap: 0.25rem;
     }
 
     .social-list {
-      gap: 0.15rem;
+      gap: 0.05rem;
     }
 
     .icon-link {
+      min-width: 32px;
+      min-height: 36px;
       padding: 0.3rem;
+    }
+
+    .nav-actions :global(.theme-toggle-btn) {
+      min-width: 36px;
+      min-height: 36px;
+      padding: 0.35rem;
+    }
+
+    .divider {
+      height: 1rem;
     }
   }
 </style>

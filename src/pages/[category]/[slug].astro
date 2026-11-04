@@ -1,14 +1,14 @@
 ---
 // [category]/[slug].astro - Full Article Page with Obsidian rendering per Section 9
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getGroupedCategories, type Article } from '../../lib/articles';
+import { getGroupedCategories, slugify, type Article } from '../../lib/articles';
 import { render } from 'astro:content';
 import { getPath, getCanonicalUrl } from '../../../site.config';
-import { calculateReadingTime, countWords } from '../../lib/reading-time';
+import { getReadingStats } from '../../lib/reading-time';
 import { generateExcerpt } from '../../lib/excerpt';
+import { resolveImage } from '../../lib/images';
 import ImageLightbox from '../../components/ImageLightbox.astro';
 import ReadingProgressBar from '../../components/ReadingProgressBar.astro';
-import TableOfContents from '../../components/TableOfContents.astro';
 import CodeBlockEnhancer from '../../components/CodeBlockEnhancer.astro';
 import HeadingAnchors from '../../components/HeadingAnchors.astro';
 import BackToTop from '../../components/BackToTop.astro';
@@ -50,31 +50,46 @@ interface Props {
 }
 
 const { article, prevArticle, nextArticle } = Astro.props;
-const { Content, headings } = await render(article.entry);
+const { Content } = await render(article.entry);
 
-const readingTime = calculateReadingTime(article.rawBody);
-const wordCount = countWords(article.rawBody);
-const tocHeadings = headings.filter(
-  (h) => (h.depth === 2 || h.depth === 3) && h.slug !== 'footnote-label' && h.text.toLowerCase() !== 'footnotes'
-);
-// Section 10: Hidden on short articles (fewer than 3 headings or fewer than 400 words)
-const showToc = tocHeadings.length >= 3 && wordCount >= 400;
+const readingStats = getReadingStats(article.rawBody);
+const readingTime = readingStats.text;
 
 // Section 10: Fall back to auto-excerpt (~155 chars) if description not in frontmatter
-const metaDescription = article.description && article.description.trim() !== ''
-  ? article.description
-  : generateExcerpt(article.rawBody);
+const metaDescription =
+  article.description && article.description.trim() !== ''
+    ? article.description
+    : generateExcerpt(article.rawBody);
 
 const canonicalUrl = getCanonicalUrl(`/${article.categorySlug}/${article.slug}/`);
-const ogImageUrl = article.cover || `/og/${article.categorySlug}/${article.slug}.png`;
 
-// Detect if math or mermaid diagrams are present to conditionally load dependencies
-const hasMath = /\$|\\\(|\\\[/.test(article.rawBody);
+// Resolve cover image through manifest (1200x630 PNG OG cover) or fall back to generated OG endpoint
+let ogImageUrl = `/og/${article.categorySlug}/${article.slug}.png`;
+let preloadCoverInfo: ReturnType<typeof resolveImage> = null;
+if (article.cover) {
+  if (article.cover.startsWith('http://') || article.cover.startsWith('https://')) {
+    ogImageUrl = article.cover;
+  } else {
+    const resolvedCover = resolveImage(article.cover, article.id);
+    if (resolvedCover) {
+      ogImageUrl = resolvedCover.ogUrl || resolvedCover.optimizedUrl;
+      preloadCoverInfo = resolvedCover;
+    } else {
+      ogImageUrl = article.cover;
+    }
+  }
+}
+
+// Accurate math detection: display math $$...$$, \(...\), \[...\], or inline $...$ (avoids prices/shell vars)
+const cleanBodyForMath = article.rawBody.replace(/```[\s\S]*?```/g, '').replace(/`[^`]*`/g, '');
+const hasMath = /\$\$[\s\S]+?\$\$|\\\(.*?\\\)|\\\[[\s\S]+?\\\]|(?<![\\\w])\$[^\s$][^$\n]*?\$(?!\d)/.test(
+  cleanBodyForMath
+);
 const hasMermaid = /```mermaid\b/.test(article.rawBody);
 
 const katexCssUrl = getPath('/vendor/katex/katex.min.css');
-const mermaidJsUrl = getPath('/vendor/mermaid/mermaid.esm.min.mjs');
 const homeUrl = getPath('/');
+const categoryUrl = getPath(`/${article.categorySlug}/`);
 
 function formatDate(date: Date): string {
   const y = date.getUTCFullYear();
@@ -94,11 +109,27 @@ function formatDate(date: Date): string {
   modifiedTime={article.modifiedDate}
   category={article.category}
   tags={article.tags}
+  lang={article.lang}
+  dir={article.dir}
+  wordCount={readingStats.wordCount}
+  readingMinutes={readingStats.minutes}
 >
-  <ReadingProgressBar />
-  {hasMath && <link rel="stylesheet" href={katexCssUrl} />}
+  <Fragment slot="head">
+    {hasMath && <link rel="stylesheet" href={katexCssUrl} />}
+    {preloadCoverInfo && preloadCoverInfo.variants?.avif?.length && (
+      <link
+        rel="preload"
+        as="image"
+        type="image/avif"
+        imagesrcset={preloadCoverInfo.variants.avif.map((v) => `${v.src} ${v.w}w`).join(', ')}
+        imagesizes="(min-width: 760px) 720px, calc(100vw - 2rem)"
+      />
+    )}
+  </Fragment>
 
-  <article class:list={['container', 'article-page', { 'has-toc': showToc }]}>
+  <ReadingProgressBar />
+
+  <article class="container article-page">
     {(article.draft || article.isScheduled) && (
       <aside class="preview-banner" role="status">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -113,8 +144,18 @@ function formatDate(date: Date): string {
     )}
 
     <header class="article-header">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <ol class="breadcrumb-list">
+          <li><a href={homeUrl}>Home</a></li>
+          <li aria-hidden="true" class="breadcrumb-sep">&rsaquo;</li>
+          <li><a href={categoryUrl}>{article.category}</a></li>
+          <li aria-hidden="true" class="breadcrumb-sep">&rsaquo;</li>
+          <li aria-current="page" class="breadcrumb-current" title={article.title}>{article.title}</li>
+        </ol>
+      </nav>
+
       <div class="article-meta">
-        <span class="meta-category">{article.category}</span>
+        <a href={categoryUrl} class="meta-category">{article.category}</a>
         <span class="meta-sep">&bull;</span>
         <time datetime={article.publishedDate.toISOString()} class="meta-date">
           {formatDate(article.publishedDate)}
@@ -132,17 +173,24 @@ function formatDate(date: Date): string {
       </div>
 
       <h1 class="article-title">{article.title}</h1>
+
+      {article.tags.length > 0 && (
+        <ul class="article-tags" aria-label="Article tags">
+          {article.tags.map((tag) => (
+            <li>
+              <a href={getPath(`/tags/${slugify(tag)}/`)} class="article-tag-pill">#{tag}</a>
+            </li>
+          ))}
+        </ul>
+      )}
     </header>
 
-    <div class:list={['article-layout', { 'has-toc': showToc }]}>
+    <div class="article-layout">
       <div class="article-main">
-        {showToc && <TableOfContents headings={tocHeadings} mode="mobile" />}
         <div class="article-body">
           <Content />
         </div>
       </div>
-
-      {showToc && <TableOfContents headings={tocHeadings} mode="desktop" />}
     </div>
 
     <footer class="article-footer">
@@ -179,19 +227,55 @@ function formatDate(date: Date): string {
   </article>
 
   {hasMermaid && (
-    <script type="module" define:vars={{ mermaidJsUrl }}>
-      import mermaid from mermaidJsUrl;
-      function initMermaid() {
-        const isDark = document.documentElement.getAttribute('data-theme') === 'espresso';
-        mermaid.initialize({
-          startOnLoad: false,
-          theme: isDark ? 'dark' : 'neutral',
-          fontFamily: 'inherit',
+    <script>
+      function setupMermaid() {
+        const blocks = document.querySelectorAll<HTMLElement>('pre.mermaid');
+        if (!blocks.length) return;
+
+        // Store original mermaid source for re-rendering on theme toggle
+        blocks.forEach((b) => {
+          if (!b.dataset.mermaidSrc) {
+            b.dataset.mermaidSrc = b.textContent || '';
+          }
         });
-        mermaid.run({ querySelector: 'pre.mermaid' });
+
+        let mermaidModulePromise: Promise<typeof import('mermaid')> | null = null;
+
+        async function renderDiagrams() {
+          if (!mermaidModulePromise) {
+            mermaidModulePromise = import('mermaid');
+          }
+          const { default: mermaid } = await mermaidModulePromise;
+          const isDark = document.documentElement.getAttribute('data-theme') === 'espresso';
+          mermaid.initialize({
+            startOnLoad: false,
+            theme: isDark ? 'dark' : 'neutral',
+            fontFamily: 'inherit',
+          });
+          blocks.forEach((b) => {
+            if (b.dataset.mermaidSrc) {
+              b.removeAttribute('data-processed');
+              b.textContent = b.dataset.mermaidSrc;
+            }
+          });
+          await mermaid.run({ nodes: blocks });
+        }
+
+        const io = new IntersectionObserver(
+          (entries) => {
+            if (!entries.some((e) => e.isIntersecting)) return;
+            io.disconnect();
+            renderDiagrams();
+          },
+          { rootMargin: '400px' }
+        );
+
+        blocks.forEach((b) => io.observe(b));
+        window.addEventListener('theme-change', renderDiagrams);
       }
-      initMermaid();
-      window.addEventListener('theme-change', initMermaid);
+
+      setupMermaid();
+      document.addEventListener('astro:after-swap', setupMermaid);
     </script>
   )}
 
@@ -204,6 +288,9 @@ function formatDate(date: Date): string {
 
 <style>
   .article-page {
+    width: 100%;
+    min-width: 0;
+    max-width: 720px;
     padding-top: 1.5rem;
     padding-bottom: 5rem;
     transition: max-width 0.2s ease;
@@ -227,35 +314,73 @@ function formatDate(date: Date): string {
     flex-shrink: 0;
   }
 
-  /* Desktop two-column layout when TOC is present */
-  @media (min-width: 1024px) {
-    .article-page.has-toc {
-      max-width: 1040px;
-    }
-
-    .article-layout.has-toc {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 3rem;
-    }
-
-    .article-layout.has-toc .article-main {
-      flex: 1;
-      min-width: 0;
-      max-width: 720px;
-    }
-  }
-
   .article-layout {
     display: block;
     position: relative;
+    width: 100%;
+    min-width: 0;
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .article-main {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .article-header {
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
     margin-bottom: 2.75rem;
     padding-bottom: 1.75rem;
     border-bottom: 1px solid var(--border-muted);
+  }
+
+  .breadcrumbs {
+    margin-bottom: 0.85rem;
+  }
+
+  .breadcrumb-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-code);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .breadcrumb-list li {
+    margin: 0;
+  }
+
+  .breadcrumb-list a {
+    color: var(--text-muted);
+    text-decoration: none;
+  }
+
+  .breadcrumb-list a:hover {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+
+  .breadcrumb-sep {
+    opacity: 0.6;
+  }
+
+  .breadcrumb-current {
+    color: var(--text);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 32ch;
   }
 
   .article-meta {
@@ -272,6 +397,11 @@ function formatDate(date: Date): string {
   .meta-category {
     color: var(--accent);
     font-weight: 600;
+    text-decoration: none;
+  }
+
+  .meta-category:hover {
+    text-decoration: underline;
   }
 
   .meta-sep {
@@ -281,14 +411,55 @@ function formatDate(date: Date): string {
 
   .article-title {
     margin: 0;
-    font-size: 2.35rem;
+    font-size: clamp(1.6rem, 6vw, 2.35rem);
     line-height: 1.25;
     letter-spacing: -0.015em;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+
+  .article-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    list-style: none;
+    margin: 1rem 0 0 0;
+    padding: 0;
+  }
+
+  .article-tags li {
+    margin: 0;
+  }
+
+  .article-tag-pill {
+    display: inline-block;
+    font-family: var(--font-code);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    padding: 0.15rem 0.55rem;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+
+  .article-tag-pill:hover {
+    color: var(--accent);
+    border-color: var(--accent);
   }
 
   .article-body {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     line-height: var(--line-height-base, 1.75);
     font-size: 1.05rem;
+    overflow-wrap: break-word;
+  }
+
+  .article-body :global(a) {
+    overflow-wrap: anywhere;
   }
 
   /* Obsidian Wikilinks */
@@ -447,10 +618,22 @@ function formatDate(date: Date): string {
     display: flex;
     justify-content: center;
     padding: 1.5rem 0;
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  .article-body :global(pre.mermaid svg) {
+    max-width: 100%;
+    height: auto;
   }
 
   /* Article Footer & Pagination */
   .article-footer {
+    width: 100%;
+    min-width: 0;
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
     margin-top: 4rem;
     padding-top: 2rem;
     border-top: 1px solid var(--border-muted);
@@ -528,6 +711,10 @@ function formatDate(date: Date): string {
 
     .pagination-link.next {
       text-align: left;
+    }
+
+    .article-body :global(pre.mermaid) {
+      justify-content: flex-start;
     }
   }
 </style>
