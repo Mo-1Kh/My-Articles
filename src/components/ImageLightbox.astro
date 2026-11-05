@@ -3,9 +3,9 @@
 // Accessible click-to-zoom modal for article images with smooth transitions and keyboard navigation.
 ---
 
-<div id="image-lightbox" class="lightbox-overlay" role="dialog" aria-modal="true" aria-label="Expanded image preview" hidden>
+<dialog id="image-lightbox" class="lightbox-overlay" aria-label="Expanded image preview">
   <button id="lightbox-close" class="lightbox-close-btn" type="button" aria-label="Close enlarged view">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
       <line x1="18" y1="6" x2="6" y2="18"></line>
       <line x1="6" y1="6" x2="18" y2="18"></line>
     </svg>
@@ -14,31 +14,34 @@
     <img id="lightbox-img" class="lightbox-image" src="" alt="" />
     <p id="lightbox-caption" class="lightbox-caption"></p>
   </div>
-</div>
+</dialog>
 
 <style>
   .lightbox-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100vw;
+    max-width: 100vw;
     height: 100vh;
     height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border: none;
     background-color: rgba(29, 21, 16, 0.88);
     backdrop-filter: blur(10px);
     z-index: 100;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) calc(1rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease-in-out;
   }
 
-  .lightbox-overlay:not([hidden]) {
-    opacity: 1;
-    pointer-events: auto;
+  .lightbox-overlay[open] {
+    display: flex;
+  }
+
+  .lightbox-overlay::backdrop {
+    background: transparent;
   }
 
   .lightbox-close-btn {
@@ -83,12 +86,6 @@
     touch-action: pinch-zoom;
     border-radius: 6px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    transform: scale(0.95);
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .lightbox-overlay:not([hidden]) .lightbox-image {
-    transform: scale(1);
   }
 
   .lightbox-caption {
@@ -112,35 +109,41 @@
 
 <script>
   function setupLightbox() {
-    const lightbox = document.getElementById('image-lightbox');
-    const lightboxImg = document.getElementById('lightbox-img') as HTMLImageElement;
+    const lightbox = document.getElementById('image-lightbox') as HTMLDialogElement | null;
+    const lightboxImg = document.getElementById('lightbox-img') as HTMLImageElement | null;
     const lightboxCaption = document.getElementById('lightbox-caption');
     const closeBtn = document.getElementById('lightbox-close');
-    let lastActiveElement: HTMLElement | null = null;
+    const preloadedUrls = new Set<string>();
 
     if (!lightbox || !lightboxImg || !lightboxCaption || !closeBtn) return;
 
+    function preloadFullImage(img: HTMLImageElement) {
+      const fullUrl = img.dataset.full;
+      if (!fullUrl || preloadedUrls.has(fullUrl)) return;
+      preloadedUrls.add(fullUrl);
+      const preload = new Image();
+      preload.src = fullUrl;
+    }
+
     function openLightbox(img: HTMLImageElement) {
-      if (!lightbox || !lightboxImg || !lightboxCaption || !closeBtn) return;
-      lastActiveElement = document.activeElement as HTMLElement | null;
+      if (!lightbox || !lightboxImg || !lightboxCaption) return;
       lightboxImg.src = img.dataset.full || img.currentSrc || img.src;
       lightboxImg.alt = img.alt || '';
       lightboxCaption.textContent = img.alt || img.title || '';
-      lightbox.removeAttribute('hidden');
+      if (!lightbox.open) {
+        lightbox.showModal();
+      }
       document.body.style.overflow = 'hidden';
-      closeBtn.focus();
     }
 
     function closeLightbox() {
       if (!lightbox) return;
-      lightbox.setAttribute('hidden', '');
-      document.body.style.overflow = '';
-      if (lastActiveElement) {
-        lastActiveElement.focus();
+      if (lightbox.open) {
+        lightbox.close();
       }
+      document.body.style.overflow = '';
     }
 
-    // Attach click listeners to all article images
     const images = document.querySelectorAll<HTMLImageElement>('.article-body img');
     images.forEach((img) => {
       img.classList.add('zoomable-image');
@@ -148,6 +151,8 @@
       img.setAttribute('role', 'button');
       img.setAttribute('aria-label', `Zoom image: ${img.alt || 'article image'}`);
 
+      img.addEventListener('pointerenter', () => preloadFullImage(img), { passive: true });
+      img.addEventListener('focus', () => preloadFullImage(img), { passive: true });
       img.addEventListener('click', () => openLightbox(img));
       img.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -159,19 +164,16 @@
 
     closeBtn.addEventListener('click', closeLightbox);
 
-    lightbox.addEventListener('click', (e) => {
-      if (e.target === lightbox) {
-        closeLightbox();
-      }
+    lightbox.addEventListener('close', () => {
+      document.body.style.overflow = '';
     });
 
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !lightbox.hasAttribute('hidden')) {
+    lightbox.addEventListener('click', (e) => {
+      if (e.target === lightbox) {
         closeLightbox();
       }
     });
   }
 
   setupLightbox();
-  document.addEventListener('astro:after-swap', setupLightbox);
 </script>

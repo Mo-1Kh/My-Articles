@@ -46,22 +46,15 @@
 
 <script>
   function setupHeadingAnchors() {
-    const headings = document.querySelectorAll<HTMLHeadingElement>('.article-body h2, .article-body h3');
-
-    headings.forEach((heading) => {
-      if (!heading.id || heading.querySelector('.heading-anchor')) return;
-
-      const anchor = document.createElement('a');
-      anchor.href = `#${heading.id}`;
-      anchor.className = 'heading-anchor';
-      anchor.setAttribute('aria-label', `Permalink to section: ${heading.textContent?.trim() || ''}`);
-      anchor.innerHTML = '<span aria-hidden="true">#</span>';
+    document.querySelectorAll<HTMLAnchorElement>('.article-body .heading-anchor').forEach((anchor) => {
+      if (anchor.dataset.bound === 'true') return;
+      anchor.dataset.bound = 'true';
 
       anchor.addEventListener('click', async () => {
-        const url = `${window.location.origin}${window.location.pathname}#${heading.id}`;
+        const href = anchor.getAttribute('href') || '';
+        const url = `${window.location.origin}${window.location.pathname}${href}`;
         try {
           await navigator.clipboard.writeText(url);
-          // Briefly indicate copied state
           const span = anchor.querySelector('span');
           if (span) {
             span.textContent = '✓';
@@ -73,11 +66,8 @@
           // If clipboard fails, regular browser navigation proceeds
         }
       });
-
-      heading.appendChild(anchor);
     });
   }
 
   setupHeadingAnchors();
-  document.addEventListener('astro:after-swap', setupHeadingAnchors);
 </script>

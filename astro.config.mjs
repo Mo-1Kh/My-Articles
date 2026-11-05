@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import { getSiteOrigin, getBasePath } from './site.config.ts';
 import { remarkObsidian } from './src/plugins/remark-obsidian.ts';
 import { rehypeObsidianCallouts } from './src/plugins/rehype-obsidian-callouts.ts';
+import { rehypeArticleEnhancements } from './src/plugins/rehype-article-enhancements.ts';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 
@@ -15,9 +16,6 @@ export default defineConfig({
     prefetchAll: true,
     defaultStrategy: 'hover',
   },
-  experimental: {
-    clientPrerender: true,
-  },
   build: {
     format: 'directory',
     inlineStylesheets: 'always',
@@ -28,7 +26,7 @@ export default defineConfig({
   },
   markdown: {
     remarkPlugins: [remarkObsidian, remarkMath],
-    rehypePlugins: [rehypeObsidianCallouts, rehypeKatex],
+    rehypePlugins: [rehypeObsidianCallouts, rehypeKatex, rehypeArticleEnhancements],
     shikiConfig: {
       theme: 'css-variables',
       wrap: true,

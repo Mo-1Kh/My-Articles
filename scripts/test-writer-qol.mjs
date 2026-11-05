@@ -153,6 +153,92 @@ assert(!excerpt.includes('secret_key'), 'Excerpt strips fenced code blocks clean
 assert(excerpt.includes('my_var and other_var'), 'Excerpt preserves snake_case identifiers');
 assert(excerpt.includes('$5 and $10'), 'Excerpt preserves dollar prices');
 
+// ----------------------------------------------------
+// Test 6: Build-Time Rehype Enhancements & Callout Inline Titles
+// ----------------------------------------------------
+console.log('\n6. Testing Build-Time Rehype Enhancements & Callouts...');
+const { rehypeArticleEnhancements } = await import('../src/plugins/rehype-article-enhancements.ts');
+const { rehypeObsidianCallouts } = await import('../src/plugins/rehype-obsidian-callouts.ts');
+
+const sampleTree = {
+  type: 'root',
+  children: [
+    {
+      type: 'element',
+      tagName: 'h2',
+      properties: { id: 'section-1' },
+      children: [{ type: 'text', value: 'Section 1' }],
+    },
+    {
+      type: 'element',
+      tagName: 'pre',
+      properties: { className: ['astro-code'], 'data-language': 'ts' },
+      children: [{ type: 'element', tagName: 'code', properties: {}, children: [{ type: 'text', value: 'const x = 1;' }] }],
+    },
+    {
+      type: 'element',
+      tagName: 'p',
+      properties: {},
+      children: [
+        {
+          type: 'element',
+          tagName: 'a',
+          properties: { href: 'https://example.com/docs' },
+          children: [{ type: 'text', value: 'Docs' }],
+        },
+      ],
+    },
+    {
+      type: 'element',
+      tagName: 'blockquote',
+      properties: {},
+      children: [
+        {
+          type: 'element',
+          tagName: 'p',
+          properties: {},
+          children: [
+            { type: 'text', value: '[!success] Using ' },
+            { type: 'element', tagName: 'code', properties: {}, children: [{ type: 'text', value: 'git log' }] },
+            { type: 'text', value: ' safely\nCallout body text' },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+rehypeObsidianCallouts()(sampleTree);
+rehypeArticleEnhancements()(sampleTree);
+
+const h2Node = sampleTree.children[0];
+assert(
+  h2Node.children.some((c) => c.tagName === 'a' && c.properties?.className?.includes('heading-anchor')),
+  'rehypeArticleEnhancements appends .heading-anchor to h2 at build time'
+);
+
+const codeContainer = sampleTree.children[1];
+assert(
+  codeContainer.tagName === 'div' && codeContainer.properties?.className?.includes('code-block-container'),
+  'rehypeArticleEnhancements wraps pre.astro-code in .code-block-container at build time'
+);
+
+const extLink = sampleTree.children[2].children[0];
+assert(
+  extLink.properties?.target === '_blank' &&
+    extLink.children.some((c) => c.tagName === 'svg') &&
+    extLink.children.some((c) => c.properties?.className?.includes('sr-only')),
+  'rehypeArticleEnhancements adds target=_blank, SVG icon, and .sr-only label to external links'
+);
+
+const calloutNode = sampleTree.children[3];
+const titleSpan = calloutNode.children[0].children[1];
+assert(
+  calloutNode.properties?.['data-callout'] === 'success' &&
+    titleSpan.children.some((c) => c.tagName === 'code'),
+  'rehypeObsidianCallouts preserves inline <code> nodes inside callout title'
+);
+
 console.log('\n=====================================================');
 console.log('ALL PHASE 8 WRITER QUALITY-OF-LIFE TESTS PASSED!');
 console.log('=====================================================');

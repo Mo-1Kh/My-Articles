@@ -126,10 +126,24 @@ export function shouldIgnoreArticle(id: string, data: any, allowDrafts: boolean 
   return false;
 }
 
+let cachedArticlesPromise: Promise<Article[]> | null = null;
+
 /**
  * Fetches all valid articles from the content collection.
+ * Memoized during production builds so multiple route generators don't re-parse the vault.
  */
 export async function getArticles(): Promise<Article[]> {
+  if (!isPreviewMode() && cachedArticlesPromise) {
+    return cachedArticlesPromise;
+  }
+  const promise = computeArticles();
+  if (!isPreviewMode()) {
+    cachedArticlesPromise = promise;
+  }
+  return promise;
+}
+
+async function computeArticles(): Promise<Article[]> {
   const entries = await getCollection('articles');
   const validArticles: Article[] = [];
 

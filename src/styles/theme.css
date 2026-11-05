@@ -104,56 +104,6 @@
   color-scheme: dark;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="latte"]) {
-    --bg: #1B1D23;
-    --surface: #23262E;
-    --surface-inset: #16181D;
-    --border: #313540;
-    --border-muted: #262932;
-    --text: #E6EDF3;
-    --text-muted: #9DA7B3;
-    --accent: #E2B170;
-    --link: #E5A85C;
-    --link-hover: #FCD34D;
-    --code-bg: #14161A;
-    --highlight: #3B331A;
-    --selection: #2E3440;
-
-    /* Scrollbar */
-    --scrollbar-track: #1B1D23;
-    --scrollbar-thumb: #333744;
-    --scrollbar-thumb-hover: #4E5364;
-
-    /* Callouts */
-    --callout-note-bg: #1C2533;
-    --callout-note-border: #60A5FA;
-    --callout-tip-bg: #172922;
-    --callout-tip-border: #34D399;
-    --callout-warning-bg: #2B2314;
-    --callout-warning-border: #FBBF24;
-    --callout-danger-bg: #2D1919;
-    --callout-danger-border: #F87171;
-
-    /* Syntax Highlighting (Astro & Shiki css-variables) */
-    --astro-code-foreground: #E6EDF3;
-    --astro-code-background: #14161A;
-    --astro-code-color-text: #E6EDF3;
-    --astro-code-color-background: #14161A;
-    --astro-code-token-comment: #8B949E;
-    --astro-code-token-keyword: #FF7B72;
-    --astro-code-token-string: #7EE787;
-    --astro-code-token-string-expression: #7EE787;
-    --astro-code-token-function: #D2A8FF;
-    --astro-code-token-constant: #79C0FF;
-    --astro-code-token-parameter: #FFA657;
-    --astro-code-token-punctuation: #C9D1D9;
-    --astro-code-token-link: #E5A85C;
-
-    color-scheme: dark;
-  }
-}
-
 /* ==========================================================================
    CSS RESET & BASE TYPOGRAPHY
    ========================================================================== */
@@ -166,8 +116,9 @@
 
 html {
   font-family: var(--font-body);
-  font-size: var(--font-size-base, 17px);
+  font-size: var(--font-size-base, 106.25%);
   line-height: var(--line-height-base, 1.75);
+  font-synthesis: none;
   color: var(--text);
   background-color: var(--bg);
   text-rendering: optimizeLegibility;
@@ -182,6 +133,32 @@ html {
   /* Custom Vertical Scrollbar (Firefox) */
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+:target,
+[id] {
+  scroll-margin-top: 5rem;
+}
+
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  z-index: 9999;
+  padding: 0.6rem 1rem;
+  background-color: var(--bg);
+  color: var(--text);
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: 0.75rem;
 }
 
 /* Custom Vertical Scrollbar (WebKit / Chrome / Safari / Edge) */
@@ -400,39 +377,90 @@ mark, .highlight {
   font-family: var(--font-heading);
   font-weight: 600;
   margin-bottom: 0.5em;
-  text-transform: capitalize;
 }
 
-.callout[data-callout="note"] {
+.callout[data-callout="note"],
+.callout[data-callout="info"],
+.callout[data-callout="todo"],
+.callout[data-callout="abstract"],
+.callout[data-callout="summary"],
+.callout[data-callout="tldr"] {
   border-left-color: var(--callout-note-border);
   background-color: var(--callout-note-bg);
 }
-.callout[data-callout="note"] .callout-title {
+.callout[data-callout="note"] .callout-title,
+.callout[data-callout="info"] .callout-title,
+.callout[data-callout="todo"] .callout-title,
+.callout[data-callout="abstract"] .callout-title,
+.callout[data-callout="summary"] .callout-title,
+.callout[data-callout="tldr"] .callout-title {
   color: var(--callout-note-border);
 }
 
-.callout[data-callout="tip"] {
+.callout[data-callout="tip"],
+.callout[data-callout="hint"],
+.callout[data-callout="important"],
+.callout[data-callout="success"],
+.callout[data-callout="check"],
+.callout[data-callout="done"] {
   border-left-color: var(--callout-tip-border);
   background-color: var(--callout-tip-bg);
 }
-.callout[data-callout="tip"] .callout-title {
+.callout[data-callout="tip"] .callout-title,
+.callout[data-callout="hint"] .callout-title,
+.callout[data-callout="important"] .callout-title,
+.callout[data-callout="success"] .callout-title,
+.callout[data-callout="check"] .callout-title,
+.callout[data-callout="done"] .callout-title {
   color: var(--callout-tip-border);
 }
 
-.callout[data-callout="warning"] {
+.callout[data-callout="warning"],
+.callout[data-callout="caution"],
+.callout[data-callout="attention"],
+.callout[data-callout="question"],
+.callout[data-callout="help"],
+.callout[data-callout="faq"] {
   border-left-color: var(--callout-warning-border);
   background-color: var(--callout-warning-bg);
 }
-.callout[data-callout="warning"] .callout-title {
+.callout[data-callout="warning"] .callout-title,
+.callout[data-callout="caution"] .callout-title,
+.callout[data-callout="attention"] .callout-title,
+.callout[data-callout="question"] .callout-title,
+.callout[data-callout="help"] .callout-title,
+.callout[data-callout="faq"] .callout-title {
   color: var(--callout-warning-border);
 }
 
-.callout[data-callout="danger"] {
+.callout[data-callout="danger"],
+.callout[data-callout="error"],
+.callout[data-callout="failure"],
+.callout[data-callout="fail"],
+.callout[data-callout="missing"],
+.callout[data-callout="bug"] {
   border-left-color: var(--callout-danger-border);
   background-color: var(--callout-danger-bg);
 }
-.callout[data-callout="danger"] .callout-title {
+.callout[data-callout="danger"] .callout-title,
+.callout[data-callout="error"] .callout-title,
+.callout[data-callout="failure"] .callout-title,
+.callout[data-callout="fail"] .callout-title,
+.callout[data-callout="missing"] .callout-title,
+.callout[data-callout="bug"] .callout-title {
   color: var(--callout-danger-border);
+}
+
+.callout[data-callout="example"],
+.callout[data-callout="quote"],
+.callout[data-callout="cite"] {
+  border-left-color: var(--accent);
+  background-color: var(--surface);
+}
+.callout[data-callout="example"] .callout-title,
+.callout[data-callout="quote"] .callout-title,
+.callout[data-callout="cite"] .callout-title {
+  color: var(--accent);
 }
 
 /* Horizontal Rule */

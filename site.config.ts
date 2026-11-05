@@ -87,7 +87,7 @@ export const siteConfig: SiteConfig = {
     rss: true,
   },
   fonts: {
-    baseFontSize: "17px",
+    baseFontSize: "106.25%",
     baseLineHeight: "1.75",
     contentWidth: "700px",
     heading: {

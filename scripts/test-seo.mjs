@@ -135,6 +135,10 @@ assert(
   'Author page /about/ does not exist (removed as requested)'
 );
 assert(
+  homeHtml.includes('class="skip-link" href="#main-content"') && homeHtml.includes('>Skip to content</a>'),
+  'BaseLayout includes accessible Skip to content link'
+);
+assert(
   sitemapContent.includes('xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"'),
   'Sitemap includes Google Image Sitemap namespace and entries'
 );

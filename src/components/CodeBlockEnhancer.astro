@@ -98,90 +98,48 @@
 </style>
 
 <script>
-  function enhanceCodeBlocks() {
-    // Find all astro code blocks in article body, excluding mermaid blocks
-    const codeBlocks = document.querySelectorAll<HTMLPreElement>('.article-body pre.astro-code');
+  const COPY_ICON = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+    </svg>
+    <span class="copy-text">Copy</span>
+  `;
 
-    codeBlocks.forEach((pre) => {
-      // Avoid wrapping twice
-      if (pre.parentElement?.classList.contains('code-block-container')) return;
+  const COPIED_ICON = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+    <span class="copy-text">Copied!</span>
+  `;
 
-      // Extract language
-      let lang = pre.getAttribute('data-language') || '';
-      if (!lang) {
-        const classNames = pre.className.split(' ');
-        for (const cls of classNames) {
-          if (cls.startsWith('lang-') || cls.startsWith('language-')) {
-            lang = cls.replace(/^(lang-|language-)/, '');
-            break;
-          }
-        }
-      }
-      if (!lang) lang = 'code';
-
-      // Create container wrapper
-      const container = document.createElement('div');
-      container.className = 'code-block-container';
-
-      // Create header bar
-      const header = document.createElement('div');
-      header.className = 'code-block-header';
-
-      const langLabel = document.createElement('span');
-      langLabel.className = 'code-lang-label';
-      langLabel.textContent = lang;
-
-      const copyBtn = document.createElement('button');
-      copyBtn.type = 'button';
-      copyBtn.className = 'code-copy-btn';
-      copyBtn.setAttribute('aria-label', `Copy ${lang} code`);
-      copyBtn.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-        </svg>
-        <span class="copy-text">Copy</span>
-      `;
+  function setupCodeCopyButtons() {
+    document.querySelectorAll<HTMLButtonElement>('.code-block-container .code-copy-btn').forEach((copyBtn) => {
+      if (copyBtn.dataset.bound === 'true') return;
+      copyBtn.dataset.bound = 'true';
 
       copyBtn.addEventListener('click', async () => {
+        const container = copyBtn.closest('.code-block-container');
+        const pre = container?.querySelector<HTMLPreElement>('pre');
+        if (!pre) return;
         const codeElement = pre.querySelector('code');
         const textToCopy = codeElement ? codeElement.innerText : pre.innerText;
 
         try {
           await navigator.clipboard.writeText(textToCopy);
           copyBtn.classList.add('copied');
-          copyBtn.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-            <span class="copy-text">Copied!</span>
-          `;
+          copyBtn.innerHTML = COPIED_ICON;
 
           setTimeout(() => {
             copyBtn.classList.remove('copied');
-            copyBtn.innerHTML = `
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-              <span class="copy-text">Copy</span>
-            `;
+            copyBtn.innerHTML = COPY_ICON;
           }, 2000);
         } catch (err) {
           console.error('Failed to copy code: ', err);
         }
       });
-
-      header.appendChild(langLabel);
-      header.appendChild(copyBtn);
-
-      // Insert container in place of pre
-      pre.parentNode?.insertBefore(container, pre);
-      container.appendChild(header);
-      container.appendChild(pre);
     });
   }
 
-  enhanceCodeBlocks();
-  document.addEventListener('astro:after-swap', enhanceCodeBlocks);
+  setupCodeCopyButtons();
 </script>

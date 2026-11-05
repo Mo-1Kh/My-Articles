@@ -12,7 +12,7 @@
 >
   <span class="sr-only">Toggle theme</span>
   <!-- Coffee Cup / Latte Icon (shown in dark theme) -->
-  <svg class="icon icon-latte" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <svg class="icon icon-latte" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
     <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
     <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
     <line x1="6" y1="1" x2="6" y2="4"></line>
@@ -20,7 +20,7 @@
     <line x1="14" y1="1" x2="14" y2="4"></line>
   </svg>
   <!-- Espresso Bean / Crescent Icon (shown in light theme) -->
-  <svg class="icon icon-espresso" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <svg class="icon icon-espresso" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
   </svg>
 </button>
@@ -101,12 +101,16 @@
       root.setAttribute('data-theme', next);
       localStorage.setItem('theme', next);
 
+      // Sync <meta name="theme-color"> with active manual theme
+      const color = next === 'espresso' ? '#1B1D23' : '#F1EFEA';
+      document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((meta) => {
+        meta.content = color;
+      });
+
       // Notify any listeners (e.g. Giscus comments iframe in Phase 9)
       window.dispatchEvent(new CustomEvent('theme-change', { detail: { theme: next } }));
     });
   }
 
-  // Setup on initial load and handle Astro page transitions if applicable
   setupThemeToggle();
-  document.addEventListener('astro:after-swap', setupThemeToggle);
 </script>
