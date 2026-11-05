@@ -99,7 +99,7 @@ console.log('\n7. Checking Audit SEO & Discoverability Improvements...');
 const homeHtmlPath = path.join(distDir, 'index.html');
 const homeHtml = fs.readFileSync(homeHtmlPath, 'utf-8');
 assert(
-  homeHtml.includes('<meta name="description" content="Essays and technical notes'),
+  homeHtml.includes('<meta name="description" content="Articles and technical notes'),
   'Home page has non-empty meta description'
 );
 assert(

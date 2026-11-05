@@ -63,12 +63,12 @@ export interface SiteConfig {
 
 export const siteConfig: SiteConfig = {
   name: "Mo's Articles",
-  tagline: "Software Engineering & Technical Writing",
-  header: "Mohamed Khairy — Software Engineering & Technical Writing",
+  tagline: "Software Engineering & Computer Science Topics",
+  header: "To Share What I Learned From My Career On Software",
   subtitle: "A place just for me",
   author: "Mohamed Khairy",
   description:
-    "Essays and technical notes by Mohamed Khairy on software engineering, systems design, and clear technical writing.",
+    "Articles and technical notes on software engineering, systems design, computer science topics , and clear technical writing.",
   githubUser: "Mo-1Kh",
   repoName: "My-Articles",
   isSubpathDeploy: true,
