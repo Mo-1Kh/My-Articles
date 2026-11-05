@@ -16,7 +16,6 @@ export interface OptimizedImageInfo {
   sourcePath: string;
   optimizedUrl: string;
   fullAvifUrl?: string;
-  ogUrl?: string;
   width: number;
   height: number;
   format: string;
@@ -60,7 +59,6 @@ function loadManifest(): Map<string, OptimizedImageInfo> {
         sourcePath: entry.sourcePath,
         optimizedUrl: getPath(entry.src || entry.optimizedUrl),
         fullAvifUrl: entry.fullAvifUrl ? getPath(entry.fullAvifUrl) : getPath(entry.src || entry.optimizedUrl),
-        ogUrl: entry.ogUrl ? getPath(entry.ogUrl) : undefined,
         width: entry.width,
         height: entry.height,
         format: entry.format || 'webp',
@@ -71,8 +69,6 @@ function loadManifest(): Map<string, OptimizedImageInfo> {
       };
 
       imageRegistry.set(key.toLowerCase(), info);
-      imageRegistry.set(entry.filename.toLowerCase(), info);
-      imageRegistry.set(entry.filename, info);
     }
     hasLoaded = true;
   } catch (err: any) {
@@ -117,7 +113,7 @@ export function getAllImages(): OptimizedImageInfo[] {
   loadManifest();
   const unique = new Map<string, OptimizedImageInfo>();
   for (const info of imageRegistry.values()) {
-    unique.set(info.filename.toLowerCase(), info);
+    unique.set(info.sourcePath.toLowerCase(), info);
   }
   return Array.from(unique.values());
 }

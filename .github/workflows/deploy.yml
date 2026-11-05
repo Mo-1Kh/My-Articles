@@ -46,8 +46,9 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Brand Fonts for Sharp SVG OG Rendering
+      - name: Install Brand & Fallback Fonts for Sharp SVG OG Rendering
         run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends fonts-noto-core || true
           mkdir -p ~/.fonts
           cp node_modules/@fontsource/fraunces/files/fraunces-latin-*.woff ~/.fonts/ 2>/dev/null || true
           cp node_modules/@fontsource/source-serif-4/files/source-serif-4-latin-*.woff ~/.fonts/ 2>/dev/null || true

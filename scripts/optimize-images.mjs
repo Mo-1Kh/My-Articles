@@ -1,6 +1,6 @@
 // scripts/optimize-images.mjs
 // Pre-build image pipeline: responsive AVIF + WebP variants, EXIF rotation, ICC profile preservation,
-// photo vs graphic classification, LQIP generation, and OG cover resizing.
+// photo vs graphic classification, alpha/animation-safe LQIP generation, and cache pruning.
 import fs from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
@@ -11,7 +11,7 @@ const SRC = path.resolve(process.cwd(), 'content');
 const OUT = path.resolve(process.cwd(), 'public', 'images', 'optimized');
 const CACHE = path.resolve(process.cwd(), '.cache', 'images');
 const MANIFEST = path.resolve(process.cwd(), 'src', 'generated', 'images-manifest.json');
-const WIDTHS = [480, 768, 1080, 1440, 2160];
+const WIDTHS = [480, 768, 1080, 1200, 1440, 2160];
 const RASTER = new Set(['.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif', '.tif', '.tiff', '.heic']);
 
 async function walk(dir, out = []) {
@@ -35,12 +35,36 @@ async function isGraphic(img, meta) {
   }
 }
 
+/**
+ * Minifies SVG safely without collapsing spaces inside <text>, <tspan>, or <pre> elements.
+ */
 function minifySvg(svgString) {
-  return svgString
+  const preserved = [];
+  const withPlaceholders = svgString
     .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<(text|tspan|pre)\b[\s\S]*?<\/\1>/gi, (match) => {
+      preserved.push(match);
+      return `__SVG_PRESERVE_${preserved.length - 1}__`;
+    });
+
+  return withPlaceholders
     .replace(/>\s+</g, '><')
     .replace(/\s{2,}/g, ' ')
-    .trim();
+    .trim()
+    .replace(/__SVG_PRESERVE_(\d+)__/g, (_m, idx) => preserved[Number(idx)]);
+}
+
+function parseSvgDimensions(svgString) {
+  const svgTagMatch = svgString.match(/<svg\b[^>]*>/i);
+  const svgTag = svgTagMatch ? svgTagMatch[0] : svgString;
+  const vb = svgTag.match(
+    /viewBox=["']\s*[\d.+-]+[\s,]+[\d.+-]+[\s,]+([\d.]+)[\s,]+([\d.]+)\s*["']/i
+  );
+  const wMatch = svgTag.match(/\swidth=["']\s*(\d+(?:\.\d+)?)/i);
+  const hMatch = svgTag.match(/\sheight=["']\s*(\d+(?:\.\d+)?)/i);
+  const width = Math.round(+(vb?.[1] ?? wMatch?.[1] ?? 800));
+  const height = Math.round(+(vb?.[2] ?? hMatch?.[1] ?? 600));
+  return { width: width || 800, height: height || 600 };
 }
 
 async function generateStaticIcons() {
@@ -55,8 +79,25 @@ async function generateStaticIcons() {
   if (!existsSync(appleIconPath)) {
     await sharp(svgBuf)
       .resize(180, 180)
-      .png({ palette: true, quality: 95, compressionLevel: 9 })
+      .png({ compressionLevel: 9 })
       .toFile(appleIconPath);
+  }
+
+  // PWA / Webmanifest icons (192x192 & 512x512)
+  const icon192Path = path.join(publicDir, 'icon-192.png');
+  if (!existsSync(icon192Path)) {
+    await sharp(svgBuf)
+      .resize(192, 192)
+      .png({ compressionLevel: 9 })
+      .toFile(icon192Path);
+  }
+
+  const icon512Path = path.join(publicDir, 'icon-512.png');
+  if (!existsSync(icon512Path)) {
+    await sharp(svgBuf)
+      .resize(512, 512)
+      .png({ compressionLevel: 9 })
+      .toFile(icon512Path);
   }
 
   // favicon-48x48.png and favicon.ico (48x48 PNG in ICO container for Google Search mobile results)
@@ -87,17 +128,23 @@ async function generateStaticIcons() {
 }
 
 async function main() {
+  // Clean OUT before writing so deleted images don't persist locally
+  await fs.rm(OUT, { recursive: true, force: true });
   await fs.mkdir(OUT, { recursive: true });
   await fs.mkdir(CACHE, { recursive: true });
   await generateStaticIcons();
 
   const manifest = {};
+  const seenBaseKeys = new Map();
+  const activeCacheFiles = new Set();
+  let uniqueCount = 0;
   const files = await walk(SRC);
 
   for (const file of files) {
     const ext = path.extname(file).toLowerCase();
     if (!RASTER.has(ext) && ext !== '.svg') continue;
 
+    uniqueCount++;
     const buf = await fs.readFile(file);
     const sizeBytes = buf.length;
     const filename = path.basename(file);
@@ -116,11 +163,7 @@ async function main() {
       const data = minifySvg(buf.toString('utf8'));
       const name = `${base}.${hash}.svg`;
       await fs.writeFile(path.join(OUT, name), data, 'utf8');
-      const vb = data.match(/viewBox=["'][\d.\s-]+?\s([\d.]+)\s([\d.]+)["']/i);
-      const wMatch = data.match(/\bwidth=["'](\d+(?:\.\d+)?)/i);
-      const hMatch = data.match(/\bheight=["'](\d+(?:\.\d+)?)/i);
-      const width = Math.round(+(vb?.[1] ?? wMatch?.[1] ?? 800));
-      const height = Math.round(+(vb?.[2] ?? hMatch?.[1] ?? 600));
+      const { width, height } = parseSvgDimensions(data);
 
       const entry = {
         type: 'svg',
@@ -135,8 +178,15 @@ async function main() {
         isOversized,
         variants: { avif: [], webp: [] },
       };
-      manifest[baseKey] = entry;
       manifest[relKey] = entry;
+      if (!seenBaseKeys.has(baseKey)) {
+        seenBaseKeys.set(baseKey, relKey);
+        manifest[baseKey] = entry;
+      } else if (seenBaseKeys.get(baseKey) !== relKey) {
+        console.warn(
+          `[Image Warning] Duplicate image basename "${filename}" in "${relKey}" and "${seenBaseKeys.get(baseKey)}". Use relative path to disambiguate.`
+        );
+      }
       continue;
     }
 
@@ -159,6 +209,7 @@ async function main() {
     for (const w of widths) {
       for (const fmt of ['avif', 'webp']) {
         const name = `${base}.${hash}-${w}.${fmt}`;
+        activeCacheFiles.add(name);
         const cached = path.join(CACHE, name);
         if (!existsSync(cached)) {
           let img = pipeline.clone().resize({ width: w, withoutEnlargement: true, kernel: 'lanczos3' });
@@ -184,63 +235,65 @@ async function main() {
       }
     }
 
-    // Legacy canonical filename copy (e.g. espresso-crema.webp) + largest variant URL
     const largestWebp = variants.webp[variants.webp.length - 1];
     const largestAvif = variants.avif[variants.avif.length - 1];
-    const canonicalWebpName = `${path.parse(file).name}.webp`;
-    if (largestWebp) {
-      await fs.copyFile(
-        path.join(OUT, path.basename(largestWebp.src)),
-        path.join(OUT, canonicalWebpName)
-      );
-    }
 
-    // 1200x630 PNG OG cover variant for social crawlers (WhatsApp, LinkedIn, Slack, X)
-    const ogName = `${base}.${hash}-og.png`;
-    const cachedOg = path.join(CACHE, ogName);
-    if (!existsSync(cachedOg)) {
-      await sharp(buf)
-        .rotate()
-        .resize(1200, 630, { fit: 'cover', position: 'attention' })
-        .png({ palette: true, quality: 90, compressionLevel: 9 })
-        .toFile(cachedOg);
-    }
-    await fs.copyFile(cachedOg, path.join(OUT, ogName));
-
-    // Tiny blurred LQIP placeholder (≈200–400 bytes)
-    const lqipCached = path.join(CACHE, `${base}.${hash}-lqip.webp`);
-    let lqipBuf;
-    if (existsSync(lqipCached)) {
-      lqipBuf = await fs.readFile(lqipCached);
-    } else {
-      lqipBuf = await pipeline.clone().resize(16).webp({ quality: 40 }).toBuffer();
-      await fs.writeFile(lqipCached, lqipBuf);
+    // Tiny blurred LQIP placeholder from first frame only; skip for transparent images
+    // so the placeholder doesn't bleed through transparent regions
+    let placeholder;
+    if (!meta.hasAlpha) {
+      const lqipName = `${base}.${hash}-lqip.webp`;
+      activeCacheFiles.add(lqipName);
+      const lqipCached = path.join(CACHE, lqipName);
+      let lqipBuf;
+      if (existsSync(lqipCached)) {
+        lqipBuf = await fs.readFile(lqipCached);
+      } else {
+        lqipBuf = await sharp(buf, { pages: 1 }).rotate().resize(16).webp({ quality: 40 }).toBuffer();
+        await fs.writeFile(lqipCached, lqipBuf);
+      }
+      placeholder = `data:image/webp;base64,${lqipBuf.toString('base64')}`;
     }
 
     const entry = {
       type: animated ? 'animated' : 'raster',
       filename,
       sourcePath: path.relative(process.cwd(), file),
-      src: largestWebp?.src ?? `/images/optimized/${canonicalWebpName}`,
-      optimizedUrl: `/images/optimized/${canonicalWebpName}`,
-      fullAvifUrl: largestAvif?.src ?? largestWebp?.src ?? `/images/optimized/${canonicalWebpName}`,
-      ogUrl: `/images/optimized/${ogName}`,
+      src: largestWebp?.src ?? '',
+      optimizedUrl: largestWebp?.src ?? '',
+      fullAvifUrl: largestAvif?.src ?? largestWebp?.src ?? '',
       width: intrinsicW,
       height: intrinsicH,
       format: 'webp',
       sizeBytes,
       isOversized: isOversized || intrinsicW > 2000 || intrinsicH > 2000,
       variants,
-      placeholder: `data:image/webp;base64,${lqipBuf.toString('base64')}`,
+      ...(placeholder ? { placeholder } : {}),
     };
 
-    manifest[baseKey] = entry;
     manifest[relKey] = entry;
+    if (!seenBaseKeys.has(baseKey)) {
+      seenBaseKeys.set(baseKey, relKey);
+      manifest[baseKey] = entry;
+    } else if (seenBaseKeys.get(baseKey) !== relKey) {
+      console.warn(
+        `[Image Warning] Duplicate image basename "${filename}" in "${relKey}" and "${seenBaseKeys.get(baseKey)}". Use relative path to disambiguate.`
+      );
+    }
+  }
+
+  // Prune stale files from .cache/images so CI cache doesn't grow indefinitely
+  if (existsSync(CACHE)) {
+    for (const cachedFile of await fs.readdir(CACHE)) {
+      if (!activeCacheFiles.has(cachedFile)) {
+        await fs.rm(path.join(CACHE, cachedFile), { force: true });
+      }
+    }
   }
 
   await fs.mkdir(path.dirname(MANIFEST), { recursive: true });
   await fs.writeFile(MANIFEST, JSON.stringify(manifest, null, 2), 'utf8');
-  console.log(`[images] ${Object.keys(manifest).length / 2} unique image(s) optimized with AVIF + WebP variants.`);
+  console.log(`[images] ${uniqueCount} unique image(s) optimized with AVIF + WebP variants.`);
 }
 
 main().catch((err) => {

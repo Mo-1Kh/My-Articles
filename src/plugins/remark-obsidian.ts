@@ -57,7 +57,7 @@ function renderResponsiveFigure(
 
   const loadingAttr = isFirstImage ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"';
   const sizesAttr = explicitWidth
-    ? `${explicitWidth}px`
+    ? `(max-width: ${explicitWidth + 32}px) calc(100vw - 2rem), ${explicitWidth}px`
     : '(min-width: 760px) 720px, calc(100vw - 2rem)';
 
   const styleParts: string[] = [];
@@ -65,7 +65,9 @@ function renderResponsiveFigure(
     styleParts.push(`background: url(${imgInfo.placeholder}) center/cover no-repeat`);
   }
   const styleAttr = styleParts.length > 0 ? ` style="${styleParts.join('; ')}"` : '';
-  const dataFullAttr = imgInfo.fullAvifUrl ? ` data-full="${escapeHtml(imgInfo.fullAvifUrl)}"` : '';
+  const onloadAttr = imgInfo.placeholder ? ` onload="this.style.background='none'"` : '';
+  const fullUrl = imgInfo.optimizedUrl || imgInfo.fullAvifUrl;
+  const dataFullAttr = fullUrl ? ` data-full="${escapeHtml(fullUrl)}"` : '';
 
   const avifVariants = imgInfo.variants?.avif || [];
   const webpVariants = imgInfo.variants?.webp || [];
@@ -74,9 +76,9 @@ function renderResponsiveFigure(
   if (avifVariants.length > 0 && webpVariants.length > 0) {
     const avifSrcset = avifVariants.map((v) => `${v.src} ${v.w}w`).join(', ');
     const webpSrcset = webpVariants.map((v) => `${v.src} ${v.w}w`).join(', ');
-    mediaMarkup = `<picture><source type="image/avif" srcset="${avifSrcset}" sizes="${sizesAttr}" /><img src="${imgInfo.optimizedUrl}" srcset="${webpSrcset}" sizes="${sizesAttr}" alt="${safeAlt}" width="${renderWidth}" height="${renderHeight}" ${loadingAttr} decoding="async" class="zoomable-image"${styleAttr}${dataFullAttr} /></picture>`;
+    mediaMarkup = `<picture><source type="image/avif" srcset="${avifSrcset}" sizes="${sizesAttr}" /><img src="${imgInfo.optimizedUrl}" srcset="${webpSrcset}" sizes="${sizesAttr}" alt="${safeAlt}" width="${renderWidth}" height="${renderHeight}" ${loadingAttr} decoding="async" class="zoomable-image"${styleAttr}${onloadAttr}${dataFullAttr} /></picture>`;
   } else {
-    mediaMarkup = `<img src="${imgInfo.optimizedUrl}" alt="${safeAlt}" width="${renderWidth}" height="${renderHeight}" ${loadingAttr} decoding="async" class="zoomable-image"${styleAttr}${dataFullAttr} />`;
+    mediaMarkup = `<img src="${imgInfo.optimizedUrl}" alt="${safeAlt}" width="${renderWidth}" height="${renderHeight}" ${loadingAttr} decoding="async" class="zoomable-image"${styleAttr}${onloadAttr}${dataFullAttr} />`;
   }
 
   const captionMarkup = hasExplicitCaption ? `<figcaption>${safeAlt}</figcaption>` : '';
@@ -264,6 +266,8 @@ export function remarkObsidian(this: any) {
       }
     });
 
+    const earlyTopLevelNodes = new Set(Array.isArray(tree.children) ? tree.children.slice(0, 3) : []);
+
     // 2. Intercept mermaid code blocks before Shiki syntax highlighter touches them
     visit(tree, 'code', (node: any, index: any, parent: any) => {
       if (node.lang === 'mermaid' && parent && typeof index === 'number') {
@@ -276,6 +280,7 @@ export function remarkObsidian(this: any) {
 
     // 3. Process text nodes for ==highlights==, [[wikilinks]], ![[embeds]], and #tags
     visit(tree, 'paragraph', (paragraphNode: any) => {
+      const isEarlyBlock = earlyTopLevelNodes.has(paragraphNode);
       const newChildren: any[] = [];
 
       for (const child of paragraphNode.children) {
@@ -329,7 +334,7 @@ export function remarkObsidian(this: any) {
             const imgInfo = resolveImage(target);
 
             if (imgInfo) {
-              const isFirstImage = imageCounter === 0;
+              const isFirstImage = imageCounter === 0 && isEarlyBlock;
               imageCounter++;
               newChildren.push({
                 type: 'html',
@@ -438,7 +443,8 @@ export function remarkObsidian(this: any) {
       const imgInfo = resolveImage(cleanUrl);
 
       if (imgInfo && parent && typeof index === 'number') {
-        const isFirstImage = imageCounter === 0;
+        const isEarlyBlock = earlyTopLevelNodes.has(node) || earlyTopLevelNodes.has(parent);
+        const isFirstImage = imageCounter === 0 && isEarlyBlock;
         imageCounter++;
         parent.children[index] = {
           type: 'html',

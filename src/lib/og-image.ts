@@ -19,21 +19,43 @@ function escapeXml(unsafe: string): string {
     .replace(/'/g, '&apos;');
 }
 
-function wrapText(text: string, maxCharsPerLine: number = 32): string[] {
-  const words = text.split(' ');
+function wrapText(text: string, maxCharsPerLine: number = 30): string[] {
+  const rawWords = text.trim().split(/\s+/).filter(Boolean);
+  const words: string[] = [];
+
+  // Hard-break any single word longer than maxCharsPerLine so it never overflows the card
+  for (const w of rawWords) {
+    if (w.length <= maxCharsPerLine) {
+      words.push(w);
+    } else {
+      for (let i = 0; i < w.length; i += maxCharsPerLine - 1) {
+        const chunk = w.slice(i, i + maxCharsPerLine - 1);
+        words.push(i + maxCharsPerLine - 1 < w.length ? `${chunk}-` : chunk);
+      }
+    }
+  }
+
   const lines: string[] = [];
   let currentLine = '';
 
   for (const word of words) {
-    if ((currentLine + ' ' + word).trim().length <= maxCharsPerLine) {
-      currentLine = (currentLine + ' ' + word).trim();
+    const candidate = currentLine ? `${currentLine} ${word}` : word;
+    if (candidate.length <= maxCharsPerLine) {
+      currentLine = candidate;
     } else {
       if (currentLine) lines.push(currentLine);
       currentLine = word;
     }
   }
   if (currentLine) lines.push(currentLine);
-  return lines.slice(0, 3); // Max 3 lines to fit comfortably
+
+  if (lines.length > 3) {
+    const third = lines[2].replace(/[.,;:!?\s-]+$/, '');
+    const clipped = third.length >= maxCharsPerLine ? third.slice(0, maxCharsPerLine - 1).trimEnd() : third;
+    return [lines[0], lines[1], `${clipped}…`];
+  }
+
+  return lines;
 }
 
 export async function generateOgImage(options: OgImageOptions): Promise<Buffer> {
@@ -55,7 +77,7 @@ export async function generateOgImage(options: OgImageOptions): Promise<Buffer> 
   const titleSpans = titleLines
     .map((line, index) => {
       const y = titleYStart + (index * 70);
-      return `<text x="100" y="${y}" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="54" font-weight="700" fill="#E6EDF3" letter-spacing="-0.02em">${escapeXml(line)}</text>`;
+      return `<text x="100" y="${y}" font-family="Fraunces, Georgia, 'Times New Roman', 'Noto Sans', 'Noto Sans Arabic', serif" font-size="54" font-weight="600" fill="#E6EDF3" letter-spacing="-0.02em">${escapeXml(line)}</text>`;
     })
     .join('\n');
 
@@ -103,7 +125,7 @@ export async function generateOgImage(options: OgImageOptions): Promise<Buffer> 
       ? `<!-- Category Badge Pill -->
   <g transform="translate(100, 110)">
     <rect width="${Math.max(140, escapedCategory.length * 11.5 + 44)}" height="40" rx="8" fill="#23262E" stroke="#E2B170" stroke-width="1.5" />
-    <text x="${(Math.max(140, escapedCategory.length * 11.5 + 44)) / 2}" y="25" font-family="'JetBrains Mono', Courier, monospace" font-size="14" font-weight="600" fill="#E2B170" text-anchor="middle" letter-spacing="0.1em">${escapedCategory}</text>
+    <text x="${(Math.max(140, escapedCategory.length * 11.5 + 44)) / 2}" y="25" font-family="'JetBrains Mono', 'Noto Sans', Courier, monospace" font-size="14" font-weight="500" fill="#E2B170" text-anchor="middle" letter-spacing="0.1em">${escapedCategory}</text>
   </g>`
       : ''
   }
@@ -126,17 +148,17 @@ export async function generateOgImage(options: OgImageOptions): Promise<Buffer> 
     <line x1="-2" y1="19" x2="23" y2="19" stroke="#E2B170" stroke-width="2" stroke-linecap="round" />
     
     <!-- Site Name (Vertically Centered with Icon) -->
-    <text x="40" y="16" font-family="Fraunces, Georgia, serif" font-size="22" font-weight="700" fill="#E2B170">${escapedSiteName}</text>
+    <text x="40" y="16" font-family="Fraunces, Georgia, serif" font-size="22" font-weight="600" fill="#E2B170">${escapedSiteName}</text>
   </g>
 
   <!-- Footer Right: Author Name -->
   <g transform="translate(1100, 520)">
-    <text x="0" y="16" font-family="'Source Serif 4', Georgia, serif" font-size="20" font-weight="500" fill="#9DA7B3" text-anchor="end">By ${escapedAuthor}</text>
+    <text x="0" y="16" font-family="'Source Serif 4', Georgia, 'Noto Sans', serif" font-size="20" font-weight="500" fill="#9DA7B3" text-anchor="end">By ${escapedAuthor}</text>
   </g>
 </svg>
 `.trim();
 
   return sharp(Buffer.from(svg))
-    .png({ palette: true, quality: 90, compressionLevel: 9 })
+    .png({ compressionLevel: 9 })
     .toBuffer();
 }

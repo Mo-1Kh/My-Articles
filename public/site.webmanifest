@@ -1,11 +1,11 @@
 {
   "name": "Mo's Articles",
   "short_name": "Mo's Articles",
-  "description": "Long-form essays and technical notes by Mohamed Khairy exploring software engineering, espresso and pour-over extraction physics, and clear thinking in public.",
+  "description": "Essays and technical notes by Mohamed Khairy on software engineering, systems design, and clear technical writing.",
   "start_url": "/My-Articles/",
   "display": "standalone",
-  "background_color": "#F5EFE6",
-  "theme_color": "#1D1510",
+  "background_color": "#F1EFEA",
+  "theme_color": "#1B1D23",
   "icons": [
     {
       "src": "/My-Articles/favicon.svg",
@@ -15,6 +15,16 @@
     {
       "src": "/My-Articles/apple-touch-icon.png",
       "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/My-Articles/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/My-Articles/icon-512.png",
+      "sizes": "512x512",
       "type": "image/png"
     }
   ]
