@@ -12,58 +12,76 @@ export function generateExcerpt(rawBody: string, maxLength: number = 155): strin
   // 2. Strip Obsidian comments %% ... %%
   text = text.replace(/%%[\s\S]*?%%/g, '');
 
-  // 3. Strip KaTeX block math $$ ... $$ and inline math $ ... $
-  text = text.replace(/\$\$[\s\S]*?\$\$/g, '');
-  text = text.replace(/\$([^\$\n]+)\$/g, '$1');
+  // 3. Strip fenced code blocks FIRST (before inline code so triple backticks aren't broken)
+  text = text.replace(/```[\s\S]*?```|~~~[\s\S]*?~~~/g, '');
 
-  // 4. Strip Obsidian callout headers: > [!...]+ or > [!...]-
+  // 4. Drop the first H1 heading so the excerpt doesn't repeat the article title
+  text = text.replace(/^#\s+.+$/m, '');
+
+  // 5. Strip KaTeX block math $$ ... $$, \[ ... \], \( ... \), and non-price inline math $ ... $
+  text = text.replace(/\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\(.*?\\\)/g, '');
+  text = text.replace(/(?<![\\\w])\$[^\s$][^$\n]*?\$(?!\d)/g, '');
+
+  // 6. Strip Obsidian callout headers: > [!...]+ or > [!...]- and blockquote '>' prefixes
   text = text.replace(/^>\s*\[![^\]]+\][+-]?\s*.*$/gm, '');
-  // Strip blockquote '>' prefixes
   text = text.replace(/^>\s*/gm, '');
 
-  // 5. Strip Obsidian images ![[...]] and markdown images ![...] (...)
+  // 7. Strip Obsidian images ![[...]] and markdown images ![...](...)
   text = text.replace(/!\[\[[^\]]*\]\]/g, '');
   text = text.replace(/!\[[^\]]*\]\([^)]*\)/g, '');
 
-  // 6. Replace wikilinks: [[note|alias]] -> alias, [[note]] -> note
-  text = text.replace(/\[\[(?:[^|\]]*\|)?([^\]]+)\]\]/g, '$1');
+  // 8. Replace wikilinks: [[note#heading|alias]] -> alias, [[note#heading]] -> heading/note
+  text = text.replace(/\[\[([^[\]]+)\]\]/g, (_m, inner: string) => {
+    if (inner.includes('|')) {
+      return inner.split('|')[1].trim();
+    }
+    if (inner.includes('#')) {
+      const parts = inner.split('#');
+      return (parts[1] || parts[0]).trim();
+    }
+    return inner.trim();
+  });
 
-  // 7. Replace markdown links: [text](url) -> text
+  // 9. Replace markdown links: [text](url) -> text
   text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
 
-  // 8. Strip markdown headings (# Title)
+  // 10. Strip footnote definitions, inline footnote markers, tables, horizontal rules, and inline #tags
+  text = text.replace(/^\[\^[^\]]+\]:.*$/gm, '');
+  text = text.replace(/\[\^[^\]]+\]/g, '');
+  text = text.replace(/^\|.*\|$/gm, '');
+  text = text.replace(/^(?:[-*_]\s*){3,}$/gm, '');
+  text = text.replace(/(?<=\s|^)#[\p{L}\p{N}_/-]+(?=\s|$|[.,;:!?])/gu, '');
+
+  // 11. Strip remaining markdown heading markers (## Heading -> Heading)
   text = text.replace(/^#+\s+/gm, '');
 
-  // 9. Strip bold, italic, strikethrough, highlights
+  // 12. Strip bold, italic, strikethrough, highlights, and inline code (word-bounded so snake_case is preserved)
+  text = text.replace(/`([^`\n]+)`/g, '$1');
   text = text.replace(/==([^=]+)==/g, '$1');
   text = text.replace(/\*\*([^*]+)\*\*/g, '$1');
-  text = text.replace(/__([^_]+)__/g, '$1');
-  text = text.replace(/\*([^*]+)\*/g, '$1');
-  text = text.replace(/_([^_]+)_/g, '$1');
+  text = text.replace(/(?<!\w)__([^_]+)__(?!\w)/g, '$1');
+  text = text.replace(/(?<!\w)\*([^*\n]+)\*(?!\w)/g, '$1');
+  text = text.replace(/(?<!\w)_([^_\n]+)_(?!\w)/g, '$1');
   text = text.replace(/~~([^~]+)~~/g, '$1');
-  text = text.replace(/`([^`]+)`/g, '$1');
 
-  // 10. Strip code blocks ``` ... ```
-  text = text.replace(/```[\s\S]*?```/g, '');
-
-  // 11. Strip HTML tags
+  // 13. Strip HTML tags
   text = text.replace(/<[^>]+>/g, '');
 
-  // 12. Strip list markers (- [x], - [ ], *, -, 1.)
+  // 14. Strip list markers (- [x], - [ ], *, -, 1.)
   text = text.replace(/^(\s*[-*+]|\s*\d+\.)\s*(\[[ xX]\]\s*)?/gm, '');
 
-  // 13. Normalize whitespace (collapse multiple newlines/spaces)
+  // 15. Normalize whitespace (collapse multiple newlines/spaces)
   text = text.replace(/\s+/g, ' ').trim();
 
   if (text.length <= maxLength) {
     return text;
   }
 
-  // Truncate at word boundary
+  // Truncate at word boundary with proper ellipsis character
   const truncated = text.substring(0, maxLength);
   const lastSpace = truncated.lastIndexOf(' ');
   if (lastSpace > maxLength * 0.7) {
-    return `${truncated.substring(0, lastSpace)}...`;
+    return `${truncated.substring(0, lastSpace)}…`;
   }
-  return `${truncated}...`;
+  return `${truncated}…`;
 }

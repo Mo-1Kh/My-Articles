@@ -1,6 +1,6 @@
 // src/lib/git-dates.ts
 // Resolves article published and modified dates according to Section 6.
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -76,10 +76,14 @@ export function resolveArticleDates(
   if (!publishedDate || !candidateModifiedDate) {
     try {
       // Get all commits for the file: hash and ISO author date (newest first)
-      const logOutput = execSync(`git log --follow --format="%H|%aI" -- "${relativePath}"`, {
-        cwd,
-        stdio: ['ignore', 'pipe', 'ignore'],
-      })
+      const logOutput = execFileSync(
+        'git',
+        ['log', '--follow', '--format=%H|%aI', '--', relativePath],
+        {
+          cwd,
+          stdio: ['ignore', 'pipe', 'ignore'],
+        }
+      )
         .toString()
         .trim();
 
@@ -95,8 +99,9 @@ export function resolveArticleDates(
           // Find original commit that added the file
           let addCommitDate: Date | undefined;
           try {
-            const addLog = execSync(
-              `git log --follow --diff-filter=A --format="%aI" -- "${relativePath}"`,
+            const addLog = execFileSync(
+              'git',
+              ['log', '--follow', '--diff-filter=A', '--format=%aI', '--', relativePath],
               { cwd, stdio: ['ignore', 'pipe', 'ignore'] }
             )
               .toString()
@@ -125,10 +130,14 @@ export function resolveArticleDates(
             } else {
               try {
                 // Inspect file content at this commit
-                const fileAtCommit = execSync(`git show "${commit.hash}:${relativePath}"`, {
-                  cwd,
-                  stdio: ['ignore', 'pipe', 'ignore'],
-                }).toString();
+                const fileAtCommit = execFileSync(
+                  'git',
+                  ['show', `${commit.hash}:${relativePath}`],
+                  {
+                    cwd,
+                    stdio: ['ignore', 'pipe', 'ignore'],
+                  }
+                ).toString();
                 isMinor = checkContentIsMinor(fileAtCommit);
               } catch {
                 isMinor = false;

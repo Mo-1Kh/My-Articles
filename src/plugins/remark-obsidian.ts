@@ -4,7 +4,7 @@ import { visit } from 'unist-util-visit';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getPath } from '../../site.config.js';
-import { slugify } from '../lib/slug.js';
+import { slugify, slugifyHeading } from '../lib/slug.js';
 import { scanAndOptimizeImages, resolveImage, type OptimizedImageInfo } from '../lib/images.js';
 
 interface WikiTarget {
@@ -156,20 +156,111 @@ function buildVaultMap(): Map<string, WikiTarget> {
   return map;
 }
 
-export function remarkObsidian() {
+function extractNodeText(node: any): string {
+  if (!node) return '';
+  if (typeof node.value === 'string') return node.value;
+  if (Array.isArray(node.children)) {
+    return node.children.map(extractNodeText).join('');
+  }
+  return '';
+}
+
+/**
+ * Strips Obsidian %% comments %% across single text nodes, inline formatting,
+ * and multi-paragraph blocks without touching code blocks.
+ */
+function stripObsidianComments(tree: any): void {
+  let inComment = false;
+
+  function walk(node: any): boolean {
+    if (!node) return false;
+
+    // Never start a comment inside code blocks or inline code
+    if (!inComment && (node.type === 'code' || node.type === 'inlineCode')) {
+      return true;
+    }
+
+    if (node.type === 'text' && typeof node.value === 'string') {
+      const val = node.value;
+      if (!inComment && !val.includes('%%')) {
+        return val.length > 0;
+      }
+      let out = '';
+      let idx = 0;
+      while (idx < val.length) {
+        const marker = val.indexOf('%%', idx);
+        if (marker === -1) {
+          if (!inComment) {
+            out += val.slice(idx);
+          }
+          break;
+        }
+        if (!inComment) {
+          out += val.slice(idx, marker);
+          inComment = true;
+        } else {
+          inComment = false;
+        }
+        idx = marker + 2;
+      }
+      node.value = out;
+      return out.length > 0;
+    }
+
+    if (Array.isArray(node.children)) {
+      const hadChildren = node.children.length > 0;
+      node.children = node.children.filter((child: any) => walk(child));
+      if (hadChildren && node.children.length === 0 && node.type !== 'root') {
+        return false;
+      }
+      return true;
+    }
+
+    // Non-text leaf while inside a multi-node comment (e.g., inlineCode, image, break)
+    return !inComment;
+  }
+
+  walk(tree);
+}
+
+export function remarkObsidian(this: any) {
   let vaultMap = buildVaultMap();
 
-  return async (tree: any) => {
+  if (this && typeof this.parser === 'function') {
+    const origParser = this.parser;
+    this.parser = function (doc: string, file: any) {
+      const cleaned = String(doc).replace(/%%[\s\S]*?%%/g, '');
+      return origParser.call(this, cleaned, file);
+    };
+  }
+
+  return async (tree: any, file?: any) => {
     if (process.env.NODE_ENV === 'development') {
       vaultMap = buildVaultMap();
     }
     await scanAndOptimizeImages();
     let imageCounter = 0;
 
-    // 1. First pass: strip Obsidian %% comments %% across all text nodes
-    visit(tree, 'text', (node: any) => {
-      if (node.value && node.value.includes('%%')) {
-        node.value = node.value.replace(/%%[\s\S]*?%%/g, '');
+    // 1. Strip Obsidian %% comments %% (handles single-line, formatted, and multi-paragraph comments)
+    stripObsidianComments(tree);
+
+    // 1b. Remove duplicate first H1 when it serves as the article title (or matches frontmatter title),
+    // and demote any remaining body H1s to H2 so the page only ever has a single <h1>
+    if (Array.isArray(tree.children)) {
+      const firstH1Index = tree.children.findIndex(
+        (n: any) => n.type === 'heading' && n.depth === 1
+      );
+      if (firstH1Index !== -1) {
+        const fmTitle = file?.data?.astro?.frontmatter?.title?.trim();
+        const h1Text = extractNodeText(tree.children[firstH1Index]).trim();
+        if (!fmTitle || fmTitle.toLowerCase() === h1Text.toLowerCase()) {
+          tree.children.splice(firstH1Index, 1);
+        }
+      }
+    }
+    visit(tree, 'heading', (node: any) => {
+      if (node.depth === 1) {
+        node.depth = 2;
       }
     });
 
@@ -178,7 +269,7 @@ export function remarkObsidian() {
       if (node.lang === 'mermaid' && parent && typeof index === 'number') {
         parent.children[index] = {
           type: 'html',
-          value: `<pre class="mermaid">${node.value}</pre>`,
+          value: `<pre class="mermaid">${escapeHtml(node.value)}</pre>`,
         };
       }
     });
@@ -199,8 +290,8 @@ export function remarkObsidian() {
         // Regular expressions for Obsidian syntax
         // Wikilink: [[target#heading|alias]] or ![[image.png|alt|300]]
         // Highlight: ==text==
-        // Tag: #tag (preceded by whitespace/start and followed by whitespace/punctuation)
-        const combinedRegex = /(!?\[\[([^[\]]+)\]\]|==([^=]+)==|(?<=\s|^)#([a-zA-Z0-9_\/-]+)(?=\s|$|[.,;:!?]))/g;
+        // Tag: #tag (Unicode-aware, including nested #topic/subtopic)
+        const combinedRegex = /(!?\[\[([^[\]]+)\]\]|==([^=]+)==|(?<=\s|^)#([\p{L}\p{N}_\/-]+)(?=\s|$|[.,;:!?]))/gu;
 
         let lastIndex = 0;
         let match;
@@ -251,7 +342,7 @@ export function remarkObsidian() {
             } else {
               newChildren.push({
                 type: 'html',
-                value: `<div class="missing-image-alert" role="alert"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> Missing image: <code>${escapeHtml(target)}</code></div>`,
+                value: `<div class="missing-image-alert" role="alert"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> Missing image: <code>${escapeHtml(target)}</code></div>`,
               });
             }
           }
@@ -275,11 +366,11 @@ export function remarkObsidian() {
             }
 
             const cleanTargetKey = target.toLowerCase();
-            const resolved = vaultMap.get(cleanTargetKey);
+            const resolved = vaultMap.get(cleanTargetKey) || vaultMap.get(slugify(target));
 
             if (resolved) {
               const displayText = escapeHtml(alias || heading || target);
-              const href = heading ? `${resolved.url}#${slugify(heading)}` : resolved.url;
+              const href = heading ? `${resolved.url}#${slugifyHeading(heading)}` : resolved.url;
               newChildren.push({
                 type: 'html',
                 value: `<a href="${href}" class="wikilink">${displayText}</a>`,
@@ -300,12 +391,16 @@ export function remarkObsidian() {
               value: `<mark class="highlight">${highlightText}</mark>`,
             });
           }
-          // 3d. Tag: #tag
+          // 3d. Tag: #tag (linked to tag hub page)
           else if (matchedStr.startsWith('#')) {
-            const tagName = escapeHtml(match[4]);
+            const rawTag = match[4];
+            const tagName = escapeHtml(rawTag);
+            const tagSlug = slugify(rawTag);
             newChildren.push({
               type: 'html',
-              value: `<span class="tag">#${tagName}</span>`,
+              value: tagSlug
+                ? `<a href="${getPath(`/tags/${tagSlug}/`)}" class="tag">#${tagName}</a>`
+                : `<span class="tag">#${tagName}</span>`,
             });
           }
 
@@ -326,7 +421,20 @@ export function remarkObsidian() {
 
     // 4. Process standard markdown images ![alt](url)
     visit(tree, 'image', (node: any, index: any, parent: any) => {
-      const cleanUrl = decodeURIComponent(node.url);
+      if (typeof node.url === 'string' && (/^(https?:)?\/\//i.test(node.url) || node.url.startsWith('data:'))) {
+        node.data = node.data || {};
+        node.data.hProperties = {
+          ...(node.data.hProperties || {}),
+          loading: 'lazy',
+          decoding: 'async',
+        };
+        return;
+      }
+
+      let cleanUrl = node.url || '';
+      try {
+        cleanUrl = decodeURIComponent(cleanUrl);
+      } catch {}
       const imgInfo = resolveImage(cleanUrl);
 
       if (imgInfo && parent && typeof index === 'number') {
@@ -343,7 +451,7 @@ export function remarkObsidian() {
       } else if (!imgInfo && parent && typeof index === 'number') {
         parent.children[index] = {
           type: 'html',
-          value: `<div class="missing-image-alert" role="alert"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> Missing image: <code>${escapeHtml(node.url)}</code></div>`,
+          value: `<div class="missing-image-alert" role="alert"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> Missing image: <code>${escapeHtml(node.url)}</code></div>`,
         };
       }
     });

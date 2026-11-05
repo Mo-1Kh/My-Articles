@@ -4,18 +4,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-
-function slugify(text) {
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w\-]+/g, '')
-    .replace(/\-\-+/g, '-')
-    .replace(/^-+/, '')
-    .replace(/-+$/, '');
-}
+import { slugify } from '../src/lib/slug.ts';
 
 function parseArgs(args) {
   const options = {
@@ -100,8 +89,6 @@ published: "${today}"
 tags: ${tagsFormatted}
 draft: ${options.draft}
 ---
-
-# ${options.title}
 
 Write your article here...
 `;

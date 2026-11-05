@@ -4,6 +4,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
+import { slugify, slugifyHeading } from '../src/lib/slug.ts';
+import { generateExcerpt } from '../src/lib/excerpt.ts';
 
 function assert(condition, message) {
   if (!condition) {
@@ -127,6 +129,29 @@ assert(shouldIgnoreArticle('_private/note.md', { draft: false }, true) === true,
 // ----------------------------------------------------
 console.log('\n4. Checking Pluggable Analytics Configuration...');
 assert(fs.existsSync(path.join(process.cwd(), 'src', 'components', 'Analytics.astro')), 'src/components/Analytics.astro exists');
+
+// ----------------------------------------------------
+// Test 5: Unicode Slugs, Heading Anchors & Excerpt Generator
+// ----------------------------------------------------
+console.log('\n5. Testing Unicode Slugs & Excerpt Generator...');
+assert(slugify('قهوة مختصة') === 'قهوة-مختصة', 'slugify preserves Arabic/Unicode characters');
+assert(slugify('my_post_name') === 'my-post-name', 'slugify normalizes underscores to hyphens');
+assert(slugifyHeading('C++ & Rust') === 'c--rust', 'slugifyHeading matches github-slugger anchor IDs');
+
+const sampleMd = `# My Title
+
+Intro text with $5 and $10 prices.
+
+\`\`\`js
+const secret_key = 123;
+\`\`\`
+
+More my_var and other_var text #tag1 [^1].`;
+const excerpt = generateExcerpt(sampleMd);
+assert(!excerpt.includes('My Title'), 'Excerpt strips first H1 title');
+assert(!excerpt.includes('secret_key'), 'Excerpt strips fenced code blocks cleanly');
+assert(excerpt.includes('my_var and other_var'), 'Excerpt preserves snake_case identifiers');
+assert(excerpt.includes('$5 and $10'), 'Excerpt preserves dollar prices');
 
 console.log('\n=====================================================');
 console.log('ALL PHASE 8 WRITER QUALITY-OF-LIFE TESTS PASSED!');

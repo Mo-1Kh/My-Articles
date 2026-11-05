@@ -154,8 +154,8 @@ export async function getArticles(): Promise<Article[]> {
     }
 
     const dates = resolveArticleDates(resolvedFilePath, {
-      published: entry.data?.published,
-      modified: entry.data?.modified,
+      published: entry.data?.published ?? entry.data?.publishDate,
+      modified: entry.data?.modified ?? entry.data?.modifiedDate,
       minor: entry.data?.minor,
     });
 
@@ -169,9 +169,23 @@ export async function getArticles(): Promise<Article[]> {
 
     const url = getPath(`/${categorySlug}/${finalSlug}/`);
 
-    // Extract tags from frontmatter or inline #tags (excluding markdown headings)
-    const frontmatterTags = Array.isArray(entry.data?.tags) ? entry.data.tags : [];
-    const inlineTagMatches = [...rawBody.matchAll(/(?:^|\s)#([a-zA-Z0-9_-]+)(?=\s|$)/g)].map((m) => m[1]);
+    // Extract tags from frontmatter or inline #tags (excluding code blocks, inline code, and comments)
+    const rawFmTags = entry.data?.tags
+      ? Array.isArray(entry.data.tags)
+        ? entry.data.tags
+        : [entry.data.tags]
+      : [];
+    const frontmatterTags = rawFmTags
+      .map((t) => String(t).replace(/^#+/, '').trim())
+      .filter(Boolean);
+
+    const bodyWithoutCodeOrComments = rawBody
+      .replace(/%%[\s\S]*?%%/g, '')
+      .replace(/```[\s\S]*?```|~~~[\s\S]*?~~~/g, '')
+      .replace(/`[^`\n]*`/g, '');
+    const inlineTagMatches = [
+      ...bodyWithoutCodeOrComments.matchAll(/(?<=\s|^)#([\p{L}\p{N}_/-]+)(?=\s|$|[.,;:!?])/gu),
+    ].map((m) => m[1]);
     const tags = Array.from(new Set([...frontmatterTags, ...inlineTagMatches]));
 
     validArticles.push({

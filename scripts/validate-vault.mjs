@@ -5,21 +5,29 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
+import { slugify } from '../src/lib/slug.ts';
+import { siteConfig } from '../site.config.ts';
 
 const contentDir = path.join(process.cwd(), 'content');
 const publicDir = path.join(process.cwd(), 'public');
 
-function slugify(text) {
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w\-]+/g, '')
-    .replace(/\-\-+/g, '-')
-    .replace(/^-+/, '')
-    .replace(/-+$/, '');
-}
+const KNOWN_FRONTMATTER_KEYS = new Set([
+  'title',
+  'description',
+  'draft',
+  'published',
+  'publishDate',
+  'modified',
+  'modifiedDate',
+  'minor',
+  'slug',
+  'tags',
+  'comments',
+  'lang',
+  'dir',
+  'redirects',
+  'aliases',
+]);
 
 // 1. Collect all files in vault recursively
 function collectFiles(dir) {
@@ -62,6 +70,14 @@ const availableImages = new Set([
 const fatalErrors = [];
 const warnings = [];
 
+if (!siteConfig.description || siteConfig.description.trim() === '') {
+  fatalErrors.push({
+    type: 'EMPTY_SITE_DESCRIPTION',
+    message: 'siteConfig.description in site.config.ts cannot be empty (required for home SEO, JSON-LD, and RSS).',
+    file: 'site.config.ts',
+  });
+}
+
 // 2. Validate Slugs & Content
 const slugMap = new Map();
 
@@ -85,6 +101,7 @@ for (const filePath of mdFiles) {
     body = raw.slice(fmMatch[0].length);
     const lines = fmMatch[1].split('\n');
     for (const line of lines) {
+      if (/^\s*[-#]/.test(line)) continue;
       const idx = line.indexOf(':');
       if (idx > -1) {
         const key = line.slice(0, idx).trim();
@@ -94,6 +111,13 @@ for (const filePath of mdFiles) {
         if (val === 'true') val = true;
         if (val === 'false') val = false;
         data[key] = val;
+        if (key && !KNOWN_FRONTMATTER_KEYS.has(key)) {
+          warnings.push({
+            type: 'UNKNOWN_FRONTMATTER_KEY',
+            message: `Unrecognized frontmatter key "${key}". Supported keys: ${Array.from(KNOWN_FRONTMATTER_KEYS).join(', ')}`,
+            file: relPath,
+          });
+        }
       }
     }
   }
