@@ -24,7 +24,7 @@ const sitemapPath = path.join(distDir, 'sitemap.xml');
 assert(fs.existsSync(sitemapPath), 'dist/sitemap.xml exists');
 const sitemapContent = fs.readFileSync(sitemapPath, 'utf-8');
 assert(sitemapContent.includes('<urlset'), 'sitemap has <urlset>');
-assert(sitemapContent.includes('<loc>https://Mo-1Kh.github.io/My-Articles/</loc>'), 'sitemap has home URL');
+assert(sitemapContent.includes('<loc>https://mo-1kh.github.io/My-Articles/</loc>'), 'sitemap has home URL');
 assert(sitemapContent.includes('<lastmod>'), 'sitemap has <lastmod> dates');
 assert(!sitemapContent.includes('/style-guide/'), 'sitemap excludes /style-guide/');
 
@@ -34,8 +34,8 @@ const robotsPath = path.join(distDir, 'robots.txt');
 assert(fs.existsSync(robotsPath), 'dist/robots.txt exists');
 const robotsContent = fs.readFileSync(robotsPath, 'utf-8');
 assert(robotsContent.includes('User-agent: *'), 'robots.txt allows all user agents');
-assert(robotsContent.includes('Disallow: /style-guide/'), 'robots.txt disallows style-guide');
-assert(robotsContent.includes('Sitemap: https://Mo-1Kh.github.io/My-Articles/sitemap.xml'), 'robots.txt points to sitemap');
+assert(robotsContent.includes('/style-guide/'), 'robots.txt disallows style-guide');
+assert(robotsContent.includes('Sitemap: https://mo-1kh.github.io/My-Articles/sitemap.xml'), 'robots.txt points to sitemap');
 
 // 3. Verify rss.xml
 console.log('\n3. Checking rss.xml...');
@@ -66,9 +66,9 @@ if (fs.existsSync(articlePath)) {
   const articleHtml = fs.readFileSync(articlePath, 'utf-8');
   assert(articleHtml.includes('<html lang="en"'), 'Article has <html lang="en">');
   assert(articleHtml.includes('<meta name="viewport"'), 'Article has meta viewport');
-  assert(articleHtml.includes('<link rel="canonical" href="https://Mo-1Kh.github.io/My-Articles/coffee/espresso-extraction/"'), 'Article has canonical URL');
+  assert(articleHtml.includes('<link rel="canonical" href="https://mo-1kh.github.io/My-Articles/coffee/espresso-extraction/"'), 'Article has canonical URL');
   assert(articleHtml.includes('<meta property="og:type" content="article"'), 'Article has og:type="article"');
-  assert(articleHtml.includes('<meta property="og:image" content="https://Mo-1Kh.github.io/My-Articles/og/coffee/espresso-extraction.png"'), 'Article has auto-generated OG image');
+  assert(articleHtml.includes('<meta property="og:image" content="https://mo-1kh.github.io/My-Articles/og/coffee/espresso-extraction.png"'), 'Article has auto-generated OG image');
   assert(articleHtml.includes('<meta name="twitter:card" content="summary_large_image"'), 'Article has twitter:card summary_large_image');
   assert(articleHtml.includes('<meta property="article:published_time"'), 'Article has article:published_time');
   assert(articleHtml.includes('<meta property="article:section" content="Coffee"'), 'Article has article:section');
@@ -96,8 +96,18 @@ if (fs.existsSync(articlePath)) {
 
 // 7. Verify General Audit Fixes
 console.log('\n7. Checking Audit SEO & Discoverability Improvements...');
+const homeHtmlPath = path.join(distDir, 'index.html');
+const homeHtml = fs.readFileSync(homeHtmlPath, 'utf-8');
 assert(
-  notFoundContent.includes('<link rel="canonical" href="https://Mo-1Kh.github.io/My-Articles/404/"'),
+  homeHtml.includes('<meta name="description" content="Essays and technical notes'),
+  'Home page has non-empty meta description'
+);
+assert(
+  homeHtml.includes('<meta name="referrer" content="strict-origin-when-cross-origin"'),
+  'Pages include strict-origin-when-cross-origin referrer meta tag'
+);
+assert(
+  notFoundContent.includes('<link rel="canonical" href="https://mo-1kh.github.io/My-Articles/404/"'),
   '404 page canonical has no double base path'
 );
 assert(

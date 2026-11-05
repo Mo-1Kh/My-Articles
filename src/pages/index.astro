@@ -24,6 +24,7 @@ function formatDate(date: Date): string {
 >
   <div class="container home-container">
     <header class="home-header">
+      {siteConfig.subtitle && <p class="home-subtitle">{siteConfig.subtitle}</p>}
       <h1 class="home-title">{siteConfig.header}</h1>
       <p class="home-desc">{siteConfig.description}</p>
     </header>
@@ -79,6 +80,15 @@ function formatDate(date: Date): string {
 
   .home-header {
     margin-bottom: 2.75rem;
+  }
+
+  .home-subtitle {
+    font-family: var(--font-code);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    margin: 0 0 0.35rem 0;
   }
 
   .home-title {

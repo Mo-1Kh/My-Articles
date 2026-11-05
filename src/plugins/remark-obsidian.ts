@@ -3,6 +3,7 @@
 import { visit } from 'unist-util-visit';
 import fs from 'node:fs';
 import path from 'node:path';
+import { getPath } from '../../site.config.js';
 import { slugify } from '../lib/slug.js';
 import { scanAndOptimizeImages, resolveImage, type OptimizedImageInfo } from '../lib/images.js';
 
@@ -10,6 +11,15 @@ interface WikiTarget {
   categorySlug: string;
   articleSlug: string;
   url: string;
+}
+
+function isPreviewMode(): boolean {
+  if (typeof process === 'undefined') return false;
+  return (
+    process.env.PREVIEW === 'true' ||
+    process.env.SHOW_DRAFTS === 'true' ||
+    process.env.NODE_ENV === 'development'
+  );
 }
 
 function escapeHtml(unsafe: string): string {
@@ -77,12 +87,15 @@ function renderResponsiveFigure(
 function buildVaultMap(): Map<string, WikiTarget> {
   const map = new Map<string, WikiTarget>();
   const contentDir = path.resolve(process.cwd(), 'content');
+  const allowDrafts = isPreviewMode();
+  const now = new Date();
 
   function scanDir(dir: string) {
     if (!fs.existsSync(dir)) return;
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
       if (entry.name.startsWith('.') || entry.name.startsWith('_')) continue;
+      if (['attachments', 'images', 'assets', 'media'].includes(entry.name.toLowerCase())) continue;
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         scanDir(fullPath);
@@ -94,26 +107,46 @@ function buildVaultMap(): Map<string, WikiTarget> {
         const filename = entry.name.replace(/\.md$/, '');
         const fileSlug = slugify(filename);
 
-        // Read frontmatter title or slug if available
+        let articleSlug = fileSlug;
         let titleSlug = fileSlug;
+
         try {
           const content = fs.readFileSync(fullPath, 'utf8');
-          const titleMatch = content.match(/^title:\s*["']?([^"'\r\n]+)["']?/m);
-          if (titleMatch) {
-            titleSlug = slugify(titleMatch[1]);
+          const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+          if (fmMatch) {
+            const fmBlock = fmMatch[1];
+            if (!allowDrafts && /^draft:\s*true\s*$/m.test(fmBlock)) {
+              continue;
+            }
+            const pubMatch = fmBlock.match(/^(?:published|publishDate):\s*["']?([^"'\r\n]+)["']?/m);
+            if (!allowDrafts && pubMatch) {
+              const pubDate = new Date(pubMatch[1].trim());
+              if (!isNaN(pubDate.getTime()) && pubDate.getTime() > now.getTime()) {
+                continue;
+              }
+            }
+            const slugMatch = fmBlock.match(/^slug:\s*["']?([^"'\r\n]+)["']?/m);
+            if (slugMatch && slugMatch[1].trim()) {
+              articleSlug = slugify(slugMatch[1].trim());
+            }
+            const titleMatch = fmBlock.match(/^title:\s*["']?([^"'\r\n]+)["']?/m);
+            if (titleMatch && titleMatch[1].trim()) {
+              titleSlug = slugify(titleMatch[1].trim());
+            }
           }
         } catch {}
 
         const target: WikiTarget = {
           categorySlug,
-          articleSlug: fileSlug,
-          url: `/${categorySlug}/${fileSlug}/`,
+          articleSlug,
+          url: getPath(`/${categorySlug}/${articleSlug}/`),
         };
 
-        // Index by filename, relative path, fileSlug, and title
+        // Index by filename, relative path, fileSlug, articleSlug, and titleSlug
         map.set(filename.toLowerCase(), target);
         map.set(rel.replace(/\.md$/, '').toLowerCase(), target);
         map.set(fileSlug.toLowerCase(), target);
+        map.set(articleSlug.toLowerCase(), target);
         map.set(titleSlug.toLowerCase(), target);
       }
     }
@@ -124,9 +157,12 @@ function buildVaultMap(): Map<string, WikiTarget> {
 }
 
 export function remarkObsidian() {
-  const vaultMap = buildVaultMap();
+  let vaultMap = buildVaultMap();
 
   return async (tree: any) => {
+    if (process.env.NODE_ENV === 'development') {
+      vaultMap = buildVaultMap();
+    }
     await scanAndOptimizeImages();
     let imageCounter = 0;
 

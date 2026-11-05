@@ -4,15 +4,15 @@
 // and defines metric-adjusted fallbacks to eliminate layout shift (CLS).
 import { siteConfig } from '../../site.config';
 
-// Load only the Latin subset CSS files (reduces 30 @font-face declarations down to 4)
+// Load only the Latin subset CSS files (matching weights declared in site.config.ts)
 import '@fontsource/fraunces/latin-600.css';
-import '@fontsource/fraunces/latin-700.css';
 import '@fontsource/source-serif-4/latin-400.css';
 import '@fontsource/source-serif-4/latin-600.css';
 import '@fontsource/jetbrains-mono/latin-400.css';
+import '@fontsource/jetbrains-mono/latin-500.css';
 
 import bodyFontUrl from '@fontsource/source-serif-4/files/source-serif-4-latin-400-normal.woff2?url';
-import headingFontUrl from '@fontsource/fraunces/files/fraunces-latin-700-normal.woff2?url';
+import headingFontUrl from '@fontsource/fraunces/files/fraunces-latin-600-normal.woff2?url';
 
 const { fonts } = siteConfig;
 

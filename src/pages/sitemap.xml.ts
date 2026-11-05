@@ -18,20 +18,9 @@ function escapeXml(unsafe: string): string {
     .replace(/'/g, '&apos;');
 }
 
-function extractArticleImages(rawBody: string, cover?: string): string[] {
+function extractArticleImages(rawBody: string): string[] {
   const origin = getSiteOrigin();
   const imageUrls = new Set<string>();
-
-  if (cover) {
-    if (cover.startsWith('http://') || cover.startsWith('https://')) {
-      imageUrls.add(cover);
-    } else {
-      const info = resolveImage(cover);
-      if (info) {
-        imageUrls.add(`${origin}${info.fullAvifUrl || info.optimizedUrl}`);
-      }
-    }
-  }
 
   for (const match of rawBody.matchAll(/!\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g)) {
     const info = resolveImage(match[1].trim());
@@ -108,7 +97,7 @@ export const GET: APIRoute = async () => {
   // Article pages with image sitemap entries
   for (const article of articles) {
     const lastmodDate = article.modifiedDate || article.publishedDate;
-    const images = extractArticleImages(article.rawBody, article.cover);
+    const images = extractArticleImages(article.rawBody);
     urls.push({
       loc: getCanonicalUrl(`/${article.categorySlug}/${article.slug}/`),
       lastmod: formatIsoDate(lastmodDate),

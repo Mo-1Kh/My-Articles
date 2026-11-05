@@ -19,7 +19,6 @@ export interface Article {
   isScheduled?: boolean;
   rawBody: string;
   url: string;
-  cover?: string;
   tags: string[];
   comments?: boolean;
   lang: string;
@@ -188,7 +187,6 @@ export async function getArticles(): Promise<Article[]> {
       isScheduled: dates.isFuture,
       rawBody,
       url,
-      cover: entry.data?.cover,
       tags,
       comments: entry.data?.comments !== false,
       lang: entry.data?.lang || 'en',

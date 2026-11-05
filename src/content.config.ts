@@ -10,7 +10,6 @@ export const collections = {
     schema: z.object({
       title: z.string().optional(),
       description: z.string().optional(),
-      cover: z.string().optional(),
       draft: z.boolean().optional().default(false),
       published: z.coerce.date().optional(),
       modified: z.coerce.date().optional(),

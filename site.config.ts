@@ -10,6 +10,7 @@ export interface SiteConfig {
   name: string;
   tagline: string;
   header: string;
+  subtitle?: string;
   author: string;
   description: string;
   githubUser: string;
@@ -46,7 +47,7 @@ export interface SiteConfig {
     repoId: string;
     category: string;
     categoryId: string;
-    mapping: 'pathname';
+    mapping: 'pathname' | 'specific';
     reactionsEnabled: boolean;
     emitMetadata: boolean;
     theme: string;
@@ -56,16 +57,18 @@ export interface SiteConfig {
     provider?: 'umami' | 'plausible' | 'fathom';
     websiteId?: string;
     host?: string;
+    domain?: string;
   };
 }
 
 export const siteConfig: SiteConfig = {
   name: "Mo's Articles",
-  tagline: "Software Engineering & technical Writing",
-  header: "A place just for me",
+  tagline: "Software Engineering & Technical Writing",
+  header: "Mohamed Khairy — Software Engineering & Technical Writing",
+  subtitle: "A place just for me",
   author: "Mohamed Khairy",
   description:
-    "",
+    "Essays and technical notes by Mohamed Khairy on software engineering, systems design, and clear technical writing.",
   githubUser: "Mo-1Kh",
   repoName: "My-Articles",
   isSubpathDeploy: true,
@@ -90,7 +93,7 @@ export const siteConfig: SiteConfig = {
     heading: {
       family: "Fraunces",
       source: "fontsource",
-      weights: [600, 700],
+      weights: [600],
       fallback: "Georgia, 'Times New Roman', serif",
     },
     body: {
@@ -113,7 +116,7 @@ export const siteConfig: SiteConfig = {
     repoId: "R_kgDOVh2KMg",
     category: "Announcements",
     categoryId: "DIC_kwDOVh2KMs4DKWTg",
-    mapping: "pathname",
+    mapping: "specific",
     reactionsEnabled: true,
     emitMetadata: false,
     theme: "preferred_color_scheme",
@@ -132,7 +135,7 @@ export function getSiteOrigin(): string {
       ? siteConfig.customDomain
       : `https://${siteConfig.customDomain}`;
   }
-  return `https://${siteConfig.githubUser}.github.io`;
+  return `https://${siteConfig.githubUser.toLowerCase()}.github.io`;
 }
 
 /**

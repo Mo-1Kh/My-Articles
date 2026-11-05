@@ -57,7 +57,7 @@ const fullOgImageUrl = ogImage.startsWith('http')
   : `${getSiteOrigin()}${getPath(ogImage)}`;
 
 const siteOrigin = getSiteOrigin();
-const siteRootUrl = `${siteOrigin}${getBasePath() || '/'}`;
+const siteRootUrl = getCanonicalUrl('/');
 
 // Derive X / Twitter @handle from socials.x
 const xUrl = siteConfig.socials.x || '';
@@ -192,6 +192,7 @@ if (ogType === 'article') {
 <title>{pageTitle}</title>
 <meta name="description" content={description} />
 <meta name="author" content={author} />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
 <link rel="canonical" href={canonicalUrl} />
 {noIndex && <meta name="robots" content="noindex, nofollow" />}
 

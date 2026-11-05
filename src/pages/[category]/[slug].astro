@@ -6,7 +6,6 @@ import { render } from 'astro:content';
 import { getPath, getCanonicalUrl } from '../../../site.config';
 import { getReadingStats } from '../../lib/reading-time';
 import { generateExcerpt } from '../../lib/excerpt';
-import { resolveImage } from '../../lib/images';
 import ImageLightbox from '../../components/ImageLightbox.astro';
 import ReadingProgressBar from '../../components/ReadingProgressBar.astro';
 import CodeBlockEnhancer from '../../components/CodeBlockEnhancer.astro';
@@ -62,23 +61,7 @@ const metaDescription =
     : generateExcerpt(article.rawBody);
 
 const canonicalUrl = getCanonicalUrl(`/${article.categorySlug}/${article.slug}/`);
-
-// Resolve cover image through manifest (1200x630 PNG OG cover) or fall back to generated OG endpoint
-let ogImageUrl = `/og/${article.categorySlug}/${article.slug}.png`;
-let preloadCoverInfo: ReturnType<typeof resolveImage> = null;
-if (article.cover) {
-  if (article.cover.startsWith('http://') || article.cover.startsWith('https://')) {
-    ogImageUrl = article.cover;
-  } else {
-    const resolvedCover = resolveImage(article.cover, article.id);
-    if (resolvedCover) {
-      ogImageUrl = resolvedCover.ogUrl || resolvedCover.optimizedUrl;
-      preloadCoverInfo = resolvedCover;
-    } else {
-      ogImageUrl = article.cover;
-    }
-  }
-}
+const ogImageUrl = `/og/${article.categorySlug}/${article.slug}.png`;
 
 // Accurate math detection: display math $$...$$, \(...\), \[...\], or inline $...$ (avoids prices/shell vars)
 const cleanBodyForMath = article.rawBody.replace(/```[\s\S]*?```/g, '').replace(/`[^`]*`/g, '');
@@ -116,15 +99,6 @@ function formatDate(date: Date): string {
 >
   <Fragment slot="head">
     {hasMath && <link rel="stylesheet" href={katexCssUrl} />}
-    {preloadCoverInfo && preloadCoverInfo.variants?.avif?.length && (
-      <link
-        rel="preload"
-        as="image"
-        type="image/avif"
-        imagesrcset={preloadCoverInfo.variants.avif.map((v) => `${v.src} ${v.w}w`).join(', ')}
-        imagesizes="(min-width: 760px) 720px, calc(100vw - 2rem)"
-      />
-    )}
   </Fragment>
 
   <ReadingProgressBar />
