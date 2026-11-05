@@ -27,6 +27,9 @@
   --scrollbar-thumb: #C8C4B7;
   --scrollbar-thumb-hover: #A39F92;
 
+  /* Lightbox */
+  --lightbox-bg: rgba(241, 239, 234, 0.92);
+
   /* Callouts */
   --callout-note-bg: #E6ECF4;
   --callout-note-border: #3B82F6;
@@ -75,6 +78,9 @@
   --scrollbar-track: #1B1D23;
   --scrollbar-thumb: #333744;
   --scrollbar-thumb-hover: #4E5364;
+
+  /* Lightbox */
+  --lightbox-bg: rgba(27, 29, 35, 0.92);
 
   /* Callouts */
   --callout-note-bg: #1C2533;
