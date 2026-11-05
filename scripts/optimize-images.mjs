@@ -128,8 +128,6 @@ async function generateStaticIcons() {
 }
 
 async function main() {
-  // Clean OUT before writing so deleted images don't persist locally
-  await fs.rm(OUT, { recursive: true, force: true });
   await fs.mkdir(OUT, { recursive: true });
   await fs.mkdir(CACHE, { recursive: true });
   await generateStaticIcons();
@@ -137,6 +135,7 @@ async function main() {
   const manifest = {};
   const seenBaseKeys = new Map();
   const activeCacheFiles = new Set();
+  const activeOutFiles = new Set();
   let uniqueCount = 0;
   const files = await walk(SRC);
 
@@ -162,7 +161,11 @@ async function main() {
     if (ext === '.svg') {
       const data = minifySvg(buf.toString('utf8'));
       const name = `${base}.${hash}.svg`;
-      await fs.writeFile(path.join(OUT, name), data, 'utf8');
+      activeOutFiles.add(name);
+      const outPath = path.join(OUT, name);
+      if (!existsSync(outPath)) {
+        await fs.writeFile(outPath, data, 'utf8');
+      }
       const { width, height } = parseSvgDimensions(data);
 
       const entry = {
@@ -210,6 +213,7 @@ async function main() {
       for (const fmt of ['avif', 'webp']) {
         const name = `${base}.${hash}-${w}.${fmt}`;
         activeCacheFiles.add(name);
+        activeOutFiles.add(name);
         const cached = path.join(CACHE, name);
         if (!existsSync(cached)) {
           let img = pipeline.clone().resize({ width: w, withoutEnlargement: true, kernel: 'lanczos3' });
@@ -230,7 +234,10 @@ async function main() {
           }
           await img.toFile(cached);
         }
-        await fs.copyFile(cached, path.join(OUT, name));
+        const outPath = path.join(OUT, name);
+        if (!existsSync(outPath)) {
+          await fs.copyFile(cached, outPath);
+        }
         variants[fmt].push({ w, src: `/images/optimized/${name}` });
       }
     }
@@ -279,6 +286,15 @@ async function main() {
       console.warn(
         `[Image Warning] Duplicate image basename "${filename}" in "${relKey}" and "${seenBaseKeys.get(baseKey)}". Use relative path to disambiguate.`
       );
+    }
+  }
+
+  // Prune stale files from OUT without deleting the directory inode (keeps Vite dev watcher intact)
+  if (existsSync(OUT)) {
+    for (const outFile of await fs.readdir(OUT)) {
+      if (!activeOutFiles.has(outFile)) {
+        await fs.rm(path.join(OUT, outFile), { force: true });
+      }
     }
   }
 
