@@ -5,8 +5,9 @@ import rss from '@astrojs/rss';
 import MarkdownIt from 'markdown-it';
 import sanitizeHtml from 'sanitize-html';
 import { getArticles, slugify } from '../lib/articles';
+import { slugifyHeading } from '../lib/slug';
 import { resolveImage } from '../lib/images';
-import { siteConfig, getSiteOrigin, getBasePath, getPath, getCanonicalUrl } from '../../site.config';
+import { siteConfig, getSiteOrigin, getPath, getCanonicalUrl } from '../../site.config';
 import { generateExcerpt } from '../lib/excerpt';
 
 const parser = new MarkdownIt({
@@ -15,14 +16,32 @@ const parser = new MarkdownIt({
   typographer: true,
 });
 
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function preprocessObsidianForRss(
   rawBody: string,
+  articleTitle: string,
   articleMap: Map<string, { url: string; title: string }>
 ): string {
   const origin = getSiteOrigin();
 
   // 1. Strip Obsidian comments %% ... %%
   let text = rawBody.replace(/%%[\s\S]*?%%/g, '');
+
+  // 1b. Strip leading H1 if it duplicates the article title
+  text = text.replace(/^\s*#\s+(.+)\r?\n?/, (fullMatch, h1Text: string) => {
+    if (!articleTitle || h1Text.trim().toLowerCase() === articleTitle.trim().toLowerCase()) {
+      return '';
+    }
+    return fullMatch;
+  });
 
   // 2. Convert Obsidian image embeds ![[target|alt|width]] to absolute HTML <img>
   text = text.replace(/!\[\[([^[\]]+)\]\]/g, (_match, inner: string) => {
@@ -40,10 +59,12 @@ function preprocessObsidianForRss(
     const info = resolveImage(target);
     if (!info) return '';
     const absSrc = `${origin}${info.optimizedUrl}`;
-    const alt = customAlt || info.filename.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
+    const rawAlt = customAlt || info.filename.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
+    const safeAlt = escapeHtml(rawAlt);
+    const safeCaption = customAlt ? escapeHtml(customAlt) : '';
     const w = width || info.width;
     const h = Math.round(w * (info.height / info.width));
-    return `<figure><img src="${absSrc}" alt="${alt}" width="${w}" height="${h}" />${customAlt ? `<figcaption>${customAlt}</figcaption>` : ''}</figure>`;
+    return `<figure><img src="${absSrc}" alt="${safeAlt}" width="${w}" height="${h}" />${safeCaption ? `<figcaption>${safeCaption}</figcaption>` : ''}</figure>`;
   });
 
   // 3. Convert Obsidian wikilinks [[target#heading|alias]] to absolute HTML <a>
@@ -64,16 +85,16 @@ function preprocessObsidianForRss(
     }
 
     const resolved = articleMap.get(target.toLowerCase()) || articleMap.get(slugify(target));
-    const displayText = alias || heading || target;
+    const displayText = escapeHtml(alias || heading || target);
     if (resolved) {
-      const href = heading ? `${resolved.url}#${slugify(heading)}` : resolved.url;
+      const href = heading ? `${resolved.url}#${slugifyHeading(heading)}` : resolved.url;
       return `<a href="${href}">${displayText}</a>`;
     }
     return displayText;
   });
 
   // 4. Convert ==highlights== to <mark>
-  text = text.replace(/==([^=\n]+)==/g, '<mark>$1</mark>');
+  text = text.replace(/==([^=\n]+)==/g, (_m, inner: string) => `<mark>${escapeHtml(inner)}</mark>`);
 
   // 5. Convert Obsidian callout headers > [!note]+ Title to bold label
   text = text.replace(/^(>\s*)\[!(\w+)\][+-]?\s*(.*)$/gm, (_m, prefix, type, title) => {
@@ -118,7 +139,7 @@ export const GET: APIRoute = async () => {
     (a, b) => b.publishedDate.getTime() - a.publishedDate.getTime()
   );
 
-  const siteUrl = `${getSiteOrigin()}${getBasePath() || '/'}`;
+  const siteUrl = getCanonicalUrl('/');
   const rssSelfUrl = getCanonicalUrl('/rss.xml');
 
   return rss({
@@ -127,9 +148,10 @@ export const GET: APIRoute = async () => {
     site: siteUrl,
     xmlns: {
       atom: 'http://www.w3.org/2005/Atom',
+      dc: 'http://purl.org/dc/elements/1.1/',
     },
     items: sortedArticles.map((article) => {
-      const preprocessed = preprocessObsidianForRss(article.rawBody, articleMap);
+      const preprocessed = preprocessObsidianForRss(article.rawBody, article.title, articleMap);
       const renderedHtml = absolutizeHtmlUrls(parser.render(preprocessed));
       const safeContent = sanitizeHtml(renderedHtml, {
         allowedTags: sanitizeHtml.defaults.allowedTags.concat([
@@ -168,7 +190,7 @@ export const GET: APIRoute = async () => {
         link: getPath(`/${article.categorySlug}/${article.slug}/`),
         content: safeContent,
         categories: [article.category, ...article.tags],
-        author: siteConfig.author,
+        customData: `<dc:creator>${escapeHtml(siteConfig.author)}</dc:creator>`,
       };
     }),
     customData: `<language>en-us</language><atom:link href="${rssSelfUrl}" rel="self" type="application/rss+xml" />`,

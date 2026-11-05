@@ -21,6 +21,10 @@ const { group } = Astro.props;
 const canonicalUrl = getCanonicalUrl(`/${group.slug}/`);
 const homeUrl = getPath('/');
 const description = `Articles and technical notes on ${group.name} by ${siteConfig.author}.`;
+const collectionItems = group.articles.map((a) => ({
+  title: a.title,
+  url: getCanonicalUrl(`/${a.categorySlug}/${a.slug}/`),
+}));
 
 function formatDate(date: Date): string {
   const y = date.getUTCFullYear();
@@ -35,6 +39,8 @@ function formatDate(date: Date): string {
   description={description}
   canonicalUrl={canonicalUrl}
   ogType="website"
+  schemaType="CollectionPage"
+  collectionItems={collectionItems}
 >
   <div class="container hub-container">
     <nav class="breadcrumbs" aria-label="Breadcrumb">

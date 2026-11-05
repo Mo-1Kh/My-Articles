@@ -12,6 +12,8 @@ interface Props {
   description?: string;
   canonicalUrl?: string;
   ogType?: 'website' | 'article';
+  schemaType?: 'WebSite' | 'CollectionPage';
+  collectionItems?: { title: string; url: string }[];
   ogImage?: string;
   publishedTime?: Date;
   modifiedTime?: Date;
@@ -19,6 +21,7 @@ interface Props {
   tags?: string[];
   author?: string;
   noIndex?: boolean;
+  noFollow?: boolean;
   lang?: string;
   dir?: 'ltr' | 'rtl';
   wordCount?: number;

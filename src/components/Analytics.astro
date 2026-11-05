@@ -4,8 +4,8 @@
 // Disabled by default. Renders zero scripts when disabled.
 import { siteConfig } from '../../site.config';
 
-const { enabled, provider, websiteId, host } = siteConfig.analytics;
-const shouldRender = enabled && Boolean(websiteId);
+const { enabled, provider, websiteId, host, domain } = siteConfig.analytics;
+const shouldRender = enabled && (provider === 'plausible' || Boolean(websiteId));
 ---
 
 {shouldRender && provider === 'umami' && (
@@ -20,8 +20,8 @@ const shouldRender = enabled && Boolean(websiteId);
 {shouldRender && provider === 'plausible' && (
   <script
     defer
-    data-domain={host || siteConfig.githubUser + '.github.io'}
-    src="https://plausible.io/js/script.js"
+    data-domain={domain || `${siteConfig.githubUser.toLowerCase()}.github.io`}
+    src={`${host ? host.replace(/\/$/, '') : 'https://plausible.io'}/js/script.js`}
   />
 )}
 

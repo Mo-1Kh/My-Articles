@@ -25,7 +25,7 @@ function extractArticleImages(rawBody: string): string[] {
   for (const match of rawBody.matchAll(/!\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g)) {
     const info = resolveImage(match[1].trim());
     if (info) {
-      imageUrls.add(`${origin}${info.fullAvifUrl || info.optimizedUrl}`);
+      imageUrls.add(`${origin}${info.optimizedUrl}`);
     }
   }
 
@@ -36,7 +36,7 @@ function extractArticleImages(rawBody: string): string[] {
     } else {
       const info = resolveImage(rawSrc);
       if (info) {
-        imageUrls.add(`${origin}${info.fullAvifUrl || info.optimizedUrl}`);
+        imageUrls.add(`${origin}${info.optimizedUrl}`);
       }
     }
   }
@@ -81,8 +81,9 @@ export const GET: APIRoute = async () => {
     });
   }
 
-  // Tag hub pages
+  // Tag hub pages (only indexable tag pages with >= 2 articles)
   for (const tag of tags) {
+    if (tag.articles.length < 2) continue;
     let tagLatest = new Date(0);
     for (const a of tag.articles) {
       const d = a.modifiedDate || a.publishedDate;

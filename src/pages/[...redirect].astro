@@ -2,11 +2,26 @@
 // src/pages/[...redirect].astro
 // Generates static HTML redirect pages (instant meta-refresh + canonical link)
 // for any old URLs declared in an article's `redirects: [...]` frontmatter.
-import { getArticles } from '../lib/articles';
-import { getCanonicalUrl, getPath } from '../../site.config';
+import { getArticles, getGroupedCategories, getAllTags } from '../lib/articles';
+import { siteConfig, getCanonicalUrl, getPath } from '../../site.config';
 
 export async function getStaticPaths() {
   const articles = await getArticles();
+  const categories = await getGroupedCategories();
+  const tags = await getAllTags();
+
+  const reservedRoutes = new Set<string>(['404', 'style-guide', 'rss.xml', 'sitemap.xml', 'robots.txt']);
+  for (const cat of categories) {
+    reservedRoutes.add(cat.slug);
+  }
+  for (const tag of tags) {
+    reservedRoutes.add(`tags/${tag.slug}`);
+  }
+  for (const a of articles) {
+    reservedRoutes.add(`${a.categorySlug}/${a.slug}`);
+  }
+
+  const repoPrefix = siteConfig.repoName.toLowerCase();
   const paths: {
     params: { redirect: string };
     props: { targetUrl: string; canonicalTarget: string; title: string };
@@ -16,8 +31,17 @@ export async function getStaticPaths() {
     if (!article.redirects || article.redirects.length === 0) continue;
 
     for (const rawOldPath of article.redirects) {
-      const cleaned = rawOldPath.replace(/^\/+|\/+$/g, '');
+      let cleaned = rawOldPath.replace(/^\/+|\/+$/g, '');
+      if (cleaned.toLowerCase().startsWith(`${repoPrefix}/`)) {
+        cleaned = cleaned.slice(repoPrefix.length + 1).replace(/^\/+|\/+$/g, '');
+      }
       if (!cleaned) continue;
+
+      if (reservedRoutes.has(cleaned.toLowerCase())) {
+        console.warn(`[Redirect Warning] Skipping redirect "${rawOldPath}" as it collides with an existing route.`);
+        continue;
+      }
+      reservedRoutes.add(cleaned.toLowerCase());
 
       paths.push({
         params: { redirect: cleaned },
@@ -48,7 +72,6 @@ const { targetUrl, canonicalTarget, title } = Astro.props;
     <meta charset="utf-8" />
     <title>Redirecting to {title}…</title>
     <link rel="canonical" href={canonicalTarget} />
-    <meta name="robots" content="noindex" />
     <meta http-equiv="refresh" content={`0; url=${targetUrl}`} />
     <script is:inline define:vars={{ targetUrl }}>
       window.location.replace(targetUrl);

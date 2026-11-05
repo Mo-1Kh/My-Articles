@@ -1,14 +1,15 @@
 // src/pages/robots.txt.ts
 // Static robots.txt referencing canonical sitemap per Section 10
 import type { APIRoute } from 'astro';
-import { getCanonicalUrl } from '../../site.config';
+import { getCanonicalUrl, getPath } from '../../site.config';
 
 export const GET: APIRoute = async () => {
   const sitemapUrl = getCanonicalUrl('/sitemap.xml');
+  const styleGuidePath = getPath('/style-guide/');
 
   const content = `User-agent: *
 Allow: /
-Disallow: /style-guide/
+Disallow: ${styleGuidePath}
 
 Sitemap: ${sitemapUrl}
 `.trim();

@@ -196,7 +196,11 @@ function formatDate(date: Date): string {
       </div>
 
       <!-- Section 11: Comments (Giscus) -->
-      <Comments articleCommentsEnabled={article.comments !== false} />
+      <Comments
+        articleCommentsEnabled={article.comments !== false}
+        term={`${article.categorySlug}/${article.slug}`}
+        lang={article.lang}
+      />
     </footer>
   </article>
 

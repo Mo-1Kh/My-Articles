@@ -5,9 +5,11 @@ import { siteConfig, getSiteOrigin, getPath } from '../../site.config';
 
 export interface Props {
   articleCommentsEnabled?: boolean;
+  term?: string;
+  lang?: string;
 }
 
-const { articleCommentsEnabled = true } = Astro.props;
+const { articleCommentsEnabled = true, term, lang = 'en' } = Astro.props;
 
 const {
   enabled,
@@ -51,6 +53,8 @@ const espressoThemeUrl = `${siteOrigin}${getPath('/giscus-espresso.css')}`;
       data-category={category}
       data-category-id={categoryId}
       data-mapping={mapping}
+      data-term={term}
+      data-lang={lang}
       data-reactions-enabled={reactionsEnabled ? '1' : '0'}
       data-emit-metadata={emitMetadata ? '1' : '0'}
       data-theme-latte={latteThemeUrl}
@@ -75,6 +79,8 @@ const espressoThemeUrl = `${siteOrigin}${getPath('/giscus-espresso.css')}`;
       const category = container.dataset.category;
       const categoryId = container.dataset.categoryId;
       const mapping = container.dataset.mapping || 'pathname';
+      const term = container.dataset.term || '';
+      const lang = container.dataset.lang || 'en';
       const reactions = container.dataset.reactionsEnabled || '1';
       const emitMetadata = container.dataset.emitMetadata || '0';
       const latteTheme = container.dataset.themeLatte || 'light';
@@ -133,12 +139,15 @@ const espressoThemeUrl = `${siteOrigin}${getPath('/giscus-espresso.css')}`;
         script.setAttribute('data-category', category || '');
         script.setAttribute('data-category-id', categoryId || '');
         script.setAttribute('data-mapping', mapping);
+        if ((mapping === 'specific' || mapping === 'number') && term) {
+          script.setAttribute('data-term', term);
+        }
         script.setAttribute('data-strict', '0');
         script.setAttribute('data-reactions-enabled', reactions);
         script.setAttribute('data-emit-metadata', emitMetadata);
         script.setAttribute('data-input-position', 'top');
         script.setAttribute('data-theme', getCurrentTheme());
-        script.setAttribute('data-lang', 'en');
+        script.setAttribute('data-lang', lang);
         // Do NOT set data-loading="lazy": IntersectionObserver already lazy-loads the script,
         // and double lazy-loading leaves the iframe stuck at 150px default height on mobile.
 

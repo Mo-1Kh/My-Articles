@@ -75,9 +75,9 @@ if (fs.existsSync(articlePath)) {
   assert(articleHtml.includes('<meta property="article:tag" content="espresso"'), 'Article has article:tag');
 
   // Validate JSON-LD
-  assert(articleHtml.includes('"@type": "BlogPosting"'), 'Article has BlogPosting JSON-LD');
-  assert(articleHtml.includes('"@type": "BreadcrumbList"'), 'Article has BreadcrumbList JSON-LD');
-  assert(articleHtml.includes('"headline": "The Physics of Espresso Extraction"'), 'BlogPosting has correct headline');
+  assert(articleHtml.includes('"@type":"BlogPosting"'), 'Article has BlogPosting JSON-LD');
+  assert(articleHtml.includes('"@type":"BreadcrumbList"'), 'Article has BreadcrumbList JSON-LD');
+  assert(articleHtml.includes('"headline":"The Physics of Espresso Extraction"'), 'BlogPosting has correct headline');
 
   // OG Image Generation
   const ogImageEspresso = path.join(distDir, 'og', 'coffee', 'espresso-extraction.png');
@@ -87,7 +87,7 @@ if (fs.existsSync(articlePath)) {
 
   assert(articleHtml.includes('<meta name="twitter:creator" content="@Mo_1Khairy"'), 'Article twitter:creator uses @handle');
   assert(articleHtml.includes('<meta property="og:locale" content="en_US"'), 'Article includes og:locale');
-  assert(articleHtml.includes('"@type": "ImageObject"'), 'BlogPosting JSON-LD uses ImageObject');
+  assert(articleHtml.includes('"@type":"ImageObject"'), 'BlogPosting JSON-LD uses ImageObject');
   assert(articleHtml.includes('"wordCount":'), 'BlogPosting JSON-LD includes wordCount');
   assert(articleHtml.includes('<source type="image/avif" srcset="'), 'Article renders <picture> with responsive AVIF srcset');
 } else {
@@ -101,6 +101,26 @@ const homeHtml = fs.readFileSync(homeHtmlPath, 'utf-8');
 assert(
   homeHtml.includes('<meta name="description" content="Essays and technical notes'),
   'Home page has non-empty meta description'
+);
+assert(
+  homeHtml.includes('<meta name="robots" content="index, follow, max-image-preview:large"'),
+  'Indexable pages include max-image-preview:large robots directive'
+);
+assert(
+  homeHtml.includes('"@type":"WebSite"'),
+  'Home page includes WebSite JSON-LD'
+);
+assert(
+  !notFoundContent.includes('"@type":"WebSite"'),
+  'Non-home pages do not duplicate WebSite JSON-LD'
+);
+assert(
+  homeHtml.includes('content="#F1EFEA"') && homeHtml.includes('content="#1B1D23"'),
+  'Theme-color meta tags match actual Latte (#F1EFEA) and Espresso (#1B1D23) backgrounds'
+);
+assert(
+  robotsContent.includes('Disallow: /My-Articles/style-guide/'),
+  'robots.txt Disallow includes base path (/My-Articles/style-guide/)'
 );
 assert(
   homeHtml.includes('<meta name="referrer" content="strict-origin-when-cross-origin"'),
