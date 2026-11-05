@@ -45,6 +45,7 @@ export interface CategoryGroup {
   slug: string;
   articles: Article[];
   oldestDate: Date;
+  latestDate: Date;
 }
 
 /**
@@ -264,9 +265,9 @@ export async function getAllTags(): Promise<TagGroup[]> {
 }
 
 /**
- * Groups and sorts articles for the Home Page according to Section 7:
+ * Groups and sorts articles for the Home Page:
  * - Articles within category: OLDEST to NEWEST by published date
- * - Categories: OLDEST to NEWEST by the published date of the oldest article in each category
+ * - Categories: NEWEST to OLDEST by the published date of the latest article in each category
  */
 export async function getGroupedCategories(): Promise<CategoryGroup[]> {
   const articles = await getArticles();
@@ -289,12 +290,13 @@ export async function getGroupedCategories(): Promise<CategoryGroup[]> {
       slug: slugify(name),
       articles: groupArticles,
       oldestDate: groupArticles[0].publishedDate,
+      latestDate: groupArticles[groupArticles.length - 1].publishedDate,
     });
   }
 
-  // Sort categories: oldest to newest by oldest article in category
+  // Sort categories: newest to oldest by latest article in category
   groups.sort((a, b) => {
-    const diff = a.oldestDate.getTime() - b.oldestDate.getTime();
+    const diff = b.latestDate.getTime() - a.latestDate.getTime();
     if (diff !== 0) return diff;
     return a.name.localeCompare(b.name);
   });

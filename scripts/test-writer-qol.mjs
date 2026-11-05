@@ -239,6 +239,13 @@ assert(
   'rehypeObsidianCallouts preserves inline <code> nodes inside callout title'
 );
 
+const articlesLibSrc = fs.readFileSync(path.join(process.cwd(), 'src', 'lib', 'articles.ts'), 'utf-8');
+assert(
+  articlesLibSrc.includes('latestDate: groupArticles[groupArticles.length - 1].publishedDate') &&
+    articlesLibSrc.includes('b.latestDate.getTime() - a.latestDate.getTime()'),
+  'getGroupedCategories sorts categories by latest article while keeping articles oldest-to-newest'
+);
+
 console.log('\n=====================================================');
 console.log('ALL PHASE 8 WRITER QUALITY-OF-LIFE TESTS PASSED!');
 console.log('=====================================================');
